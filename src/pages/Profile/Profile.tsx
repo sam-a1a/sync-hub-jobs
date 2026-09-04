@@ -193,7 +193,7 @@ function ProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] px-5 sm:px-8">
-      <div className="grid gap-8 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-14">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-14">
         <aside className="lg:sticky lg:top-28 lg:self-start">
           <Track stops={stops} current={current} reachable={reachable} lit={lit} onGo={(i) => go(STOP_KEYS[i])} />
         </aside>

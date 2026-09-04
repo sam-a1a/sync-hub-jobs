@@ -29,11 +29,31 @@ import { asset } from '../../lib/asset'
  * point it becomes an ordinary block at the bottom of the page, which is what a
  * narrow screen wants anyway.
  */
+const WIDE = '(min-width: 64rem)'
+
+function useWide(): boolean {
+  const [wide, setWide] = useState(
+    () => typeof window !== 'undefined' && !!window.matchMedia?.(WIDE).matches,
+  )
+
+  useEffect(() => {
+    if (!window.matchMedia) return
+    const media = window.matchMedia(WIDE)
+    const read = () => setWide(media.matches)
+    read()
+    media.addEventListener('change', read)
+    return () => media.removeEventListener('change', read)
+  }, [])
+
+  return wide
+}
+
 function Footer() {
   const panel = useRef<HTMLDivElement>(null)
   const [height, setHeight] = useState<number | null>(null)
   const [room, setRoom] = useState<number | null>(null)
   const lenis = useLenis()
+  const wide = useWide()
 
   useLayoutEffect(() => {
     const node = panel.current
@@ -76,7 +96,7 @@ function Footer() {
    * to be measured, which is not a footer that fits — it is one that has not
    * been read yet.
    */
-  const reveals = height !== null && room !== null && height > 0 && height <= room
+  const reveals = wide && height !== null && room !== null && height > 0 && height <= room
 
   /*
    * The same three boxes either way, wearing the reveal's styles or none.
@@ -338,11 +358,11 @@ function Content({ ref }: { ref?: React.Ref<HTMLDivElement> }) {
         </div>
 
         <div className="mt-14 border-t border-hairline py-7">
-          <div className="flex flex-col gap-4 text-xs text-ink-muted sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col items-center gap-4 text-center text-xs text-ink-muted sm:flex-row sm:justify-between sm:text-left">
             <p>
               © {year} SYNC Hub. All rights reserved.
             </p>
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
+            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-2">
               {/*
                * Only the documents that exist. There is no cookie policy, so
                * there is no link to one — a dead entry in a legal line is worse

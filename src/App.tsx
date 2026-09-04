@@ -30,7 +30,7 @@ function App() {
   if (inStudio) {
     return (
       <ReactLenis root>
-        <div className="min-h-screen bg-paper text-ink">
+        <div className="min-h-dvh bg-paper text-ink">
           <Studio>
             <PageTransition>
               <Suspense fallback={null}>
@@ -54,7 +54,7 @@ function App() {
 
   return (
     <ReactLenis root>
-      <div className="flex min-h-screen flex-col bg-paper text-ink">
+      <div className="flex min-h-dvh flex-col bg-paper text-ink">
         <Header />
         <main className="flex-1 pt-18">
           <PageTransition>

@@ -358,6 +358,8 @@ html[data-vt='route']::view-transition-new(root) {
    */
   --card-w: min(1180px, 73vw);
 
+  --card-inset: 1.25rem;
+
   /*
    * The section is full-bleed and the *text* is inset, not the other way round.
    *
@@ -369,7 +371,7 @@ html[data-vt='route']::view-transition-new(root) {
    * plain 24px gutter once the screen is narrower than the cap — is applied to
    * the heading and the controls alone.
    */
-  --card-pad: 2rem;
+  --card-pad: 1.5rem;
   /*
    * The inset at the start of the row, and the margin the heading and the
    * controls share — so the first card sits exactly under the heading's first
@@ -410,9 +412,17 @@ html[data-vt='route']::view-transition-new(root) {
   grid-area: controls;
 }
 
+@media (width < 40rem) {
+  .gallery {
+    --card-w: calc(100vw - var(--gallery-edge) - 2.5rem);
+    row-gap: 28px;
+  }
+}
+
 @media (width >= 40rem) {
   .gallery {
     --card-pad: 3rem;
+    --card-inset: var(--card-pad);
   }
 }
 
@@ -473,6 +483,10 @@ html[data-vt='route']::view-transition-new(root) {
   scrollbar-width: none;
   /* The scroll is the control; a bar under it is a second one that lies. */
   -ms-overflow-style: none;
+
+  overflow-y: hidden;
+  padding-block-end: 48px;
+  margin-block-end: -48px;
 }
 
 .gallery-track::-webkit-scrollbar {
@@ -488,6 +502,13 @@ html[data-vt='route']::view-transition-new(root) {
    * viewport for one slide in a row of four.
    */
   aspect-ratio: 2 / 1;
+  overflow: hidden;
+}
+
+@media (width < 40rem) {
+  .gallery-card {
+    aspect-ratio: 3 / 4;
+  }
 }
 
 /*
@@ -709,6 +730,9 @@ html[data-vt='route']::view-transition-new(root) {
   padding-inline: 1.5rem;
   scroll-padding-inline: 1.5rem;
   overflow-x: auto;
+  overflow-y: hidden;
+  padding-block-end: 48px;
+  margin-block-end: -48px;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -735,6 +759,9 @@ html[data-vt='route']::view-transition-new(root) {
     margin-inline: auto;
     max-width: 72rem;
     overflow-x: visible;
+    overflow-y: visible;
+    padding-block-end: 0;
+    margin-block-end: 0;
     scroll-snap-type: none;
   }
 
@@ -889,7 +916,8 @@ html[data-vt='route']::view-transition-new(root) {
     color var(--hover-fade) var(--ease-standard);
 }
 
-.account-menu-item:hover {
+.account-menu-item:hover,
+.account-menu-item:active {
   background-color: var(--hover-wash);
 }
 
@@ -900,7 +928,8 @@ html[data-vt='route']::view-transition-new(root) {
   gap: 16px;
 }
 
-.account-menu-quit:hover {
+.account-menu-quit:hover,
+.account-menu-quit:active {
   background-color: transparent;
   color: var(--color-brick);
 }
@@ -996,11 +1025,25 @@ html[data-vt='route']::view-transition-new(root) {
 }
 
 .account-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(var(--sheet-viewport, 100dvh) - 2rem);
   border-radius: 16px;
   border: 1px solid var(--hairline);
   background-color: var(--paper);
   padding: 24px;
   box-shadow: 0 24px 60px -20px rgb(7 71 66 / 0.28);
+}
+
+.sheet-grip {
+  flex: none;
+}
+
+.sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .dark .account-panel {
@@ -1049,8 +1092,6 @@ html[data-platform] .account-sheet[open]::backdrop {
 }
 
 html[data-platform] .account-sheet .account-panel {
-  display: flex;
-  flex-direction: column;
   max-height: calc(var(--sheet-viewport, 100dvh) - 3rem);
   padding: 0;
   border: 0;
@@ -1060,7 +1101,6 @@ html[data-platform] .account-sheet .account-panel {
 }
 
 html[data-platform] .sheet-grip {
-  flex: none;
   padding-inline: var(--sheet-inset);
   touch-action: none;
 }
@@ -1072,10 +1112,6 @@ html[data-platform] .sheet-handle {
 }
 
 html[data-platform] .sheet-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
   padding: 0 var(--sheet-inset) calc(var(--sheet-inset) + env(safe-area-inset-bottom, 0px));
 }
 
@@ -1449,6 +1485,12 @@ html[data-platform='ios'] .account-sheet input {
   margin-block: -0.3em;
 }
 
+@media (width < 64rem) {
+  .morph-cta {
+    max-width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .spinner {
     animation-duration: 2s;
@@ -1551,7 +1593,7 @@ html[data-platform='ios'] .account-sheet input {
  * across the screen instead of a wall filling it.
  */
 .film-stage {
-  --film-h: 78vh;
+  --film-h: 78svh;
   height: var(--film-h);
 }
 
@@ -1584,6 +1626,15 @@ html[data-platform='ios'] .account-sheet input {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+@media (width < 40rem) {
+  .film-controls {
+    inset-inline: 0;
+    top: auto;
+    bottom: 1.5rem;
+    justify-content: center;
+  }
 }
 
 /*
@@ -1820,6 +1871,23 @@ html[data-platform='ios'] .account-sheet input {
   }
 }
 
+
+.studio-nav {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.studio-nav::-webkit-scrollbar {
+  display: none;
+}
+
+@media (width >= 40rem) {
+  .studio-nav {
+    overflow: visible;
+  }
+}
 
 .studio-in {
   animation: studio-in 720ms var(--ease-glide) both;
@@ -2239,6 +2307,15 @@ html[data-platform='ios'] .account-sheet input {
     opacity 300ms var(--ease-standard),
     scale 460ms var(--ease-glide),
     translate 460ms var(--ease-glide);
+}
+
+@media (width < 40rem) {
+  .bell-panel {
+    inset-inline: 1rem;
+    width: auto;
+    max-width: none;
+    transform-origin: top center;
+  }
 }
 
 .bell-panel[data-open] {

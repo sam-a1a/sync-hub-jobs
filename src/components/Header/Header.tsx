@@ -67,6 +67,7 @@ function Header() {
    * changes under you should change it the same way everywhere on the site.
    */
   const cta = account ? `Hello, ${firstName(account)}!` : 'Get Started'
+  const ctaNarrow = account ? firstName(account) : 'Get Started'
 
   /*
    * The menu answers to one input or the other, never both.
@@ -200,7 +201,7 @@ function Header() {
       onMouseLeave={canHover ? menu.leave : undefined}
     >
       <GlassBar bare={!scrolled && !expanded} expanded={expanded}>
-        <div className="relative flex h-18 w-full items-center px-6">
+        <div className="relative flex h-18 w-full items-center px-4 lg:px-6">
           {/*
            * No hover state at all. It is the one link on the bar whose target
            * everybody already knows, and a wordmark that lightens under the
@@ -209,7 +210,7 @@ function Header() {
           <Link
             to="/"
             aria-label="SYNC Hub, home"
-            className="relative z-10 inline-flex items-center gap-2.5"
+            className="relative z-10 inline-flex shrink-0 items-center gap-2.5"
             onMouseEnter={canHover ? menu.close : undefined}
           >
             <img src={asset("/sync-logo.png")} alt="" className="size-9 shrink-0 object-contain" />
@@ -220,7 +221,8 @@ function Header() {
              */}
             <span
               aria-hidden="true"
-              className="text-[1.0625rem] font-semibold tracking-[-0.01em] whitespace-nowrap text-ink"
+              className="text-[1.0625rem] font-semibold tracking-[-0.01em] whitespace-nowrap text-ink
+                max-[359px]:hidden"
             >
               SYNC Hub
             </span>
@@ -276,7 +278,7 @@ function Header() {
           </nav>
 
           <div
-            className="relative z-10 ml-auto flex items-center gap-2"
+            className="relative z-10 ml-auto flex min-w-0 items-center gap-1 sm:gap-2"
             onMouseEnter={canHover ? menu.close : undefined}
           >
             <ThemeToggle />
@@ -315,11 +317,11 @@ function Header() {
             <FlairButton
               href="#"
               variant="filled"
-              className="lg:hidden"
+              className="min-w-0 lg:hidden"
               onClick={start}
             >
-              <Morph token={cta} className="morph-cta">
-                {cta}
+              <Morph token={ctaNarrow} className="morph-cta">
+                {ctaNarrow}
               </Morph>
             </FlairButton>
 
@@ -329,10 +331,10 @@ function Header() {
               aria-controls="mobile-nav"
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               onClick={toggleMobile}
-              className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full
-                text-ink transition-[color,background-color,scale] duration-[var(--hover-fade)]
-                ease-[var(--ease-standard)] hover:bg-[var(--hover-wash)] active:scale-90
-                lg:hidden"
+              className="-mr-1.5 inline-flex size-10 cursor-pointer items-center justify-center
+                rounded-full text-ink transition-[color,background-color,scale]
+                duration-[var(--hover-fade)] ease-[var(--ease-standard)]
+                shrink-0 hover:bg-[var(--hover-wash)] active:scale-90 lg:hidden"
             >
               <MenuIcon open={mobileOpen} />
             </button>

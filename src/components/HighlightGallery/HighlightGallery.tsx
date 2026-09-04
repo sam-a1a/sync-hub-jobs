@@ -264,9 +264,9 @@ function HighlightGallery() {
             style={{ '--i': i } as CSSProperties}
           >
             <div
-              className={`flex size-full flex-col justify-between rounded-[28px] bg-gradient-to-br p-[var(--card-pad)] ring-1 ring-white/10 ${highlight.surface}`}
+              className={`flex size-full flex-col justify-between rounded-[28px] bg-gradient-to-br p-[var(--card-inset)] ring-1 ring-white/10 ${highlight.surface}`}
             >
-              <div>
+              <div className="shrink-0">
                 <h3 className="max-w-[16ch] text-2xl leading-tight font-semibold text-white sm:text-4xl">
                   {highlight.title}
                 </h3>
@@ -275,8 +275,8 @@ function HighlightGallery() {
                 </p>
               </div>
 
-              {/* A stand-in for the screenshot each highlight will carry. */}
-              <div className="mt-10 h-1/2 rounded-2xl bg-white/10 ring-1 ring-white/10" />
+              
+              <div className="mt-8 min-h-24 flex-1 rounded-2xl bg-white/10 ring-1 ring-white/10 sm:mt-10 sm:h-1/2 sm:flex-none" />
             </div>
           </article>
         ))}

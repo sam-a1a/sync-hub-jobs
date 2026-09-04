@@ -47,14 +47,14 @@ function writePrefs(value: Prefs): void {
 function Section({ title, note, children, index }: { title: string; note: ReactNode; children: ReactNode; index: number }) {
   return (
     <section
-      className="hero-in grid gap-x-16 gap-y-6 border-t border-hairline py-12 last:pb-0 lg:grid-cols-[20rem_minmax(0,1fr)] lg:py-14 lg:last:pb-0"
+      className="hero-in grid grid-cols-[minmax(0,1fr)] gap-x-16 gap-y-6 border-t border-hairline py-12 last:pb-0 lg:grid-cols-[20rem_minmax(0,1fr)] lg:py-14 lg:last:pb-0"
       style={{ '--i': index } as CSSProperties}
     >
       <div>
         <h2 className="text-xs font-bold tracking-[0.14em] text-ink-faint uppercase">{title}</h2>
         <p className="mt-3.5 max-w-[34ch] text-sm leading-relaxed text-ink-muted">{note}</p>
       </div>
-      <div className="grid gap-0.5">{children}</div>
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-0.5">{children}</div>
     </section>
   )
 }
@@ -72,8 +72,8 @@ function Row({ children, align = 'center', className = '' }: { children: ReactNo
 function Key({ title, note }: { title: string; note?: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-base font-medium tracking-[-0.012em] text-ink">{title}</p>
-      {note ? <p className="mt-1 text-sm text-ink-muted">{note}</p> : null}
+      <p className="text-base font-medium tracking-[-0.012em] break-words text-ink">{title}</p>
+      {note ? <p className="mt-1 text-sm break-words text-ink-muted">{note}</p> : null}
     </div>
   )
 }
@@ -263,7 +263,7 @@ function SettingsPage() {
       </header>
 
       <Section title="Account" note="Your name, and the password you get in with. Your email address cannot be changed at the moment." index={2}>
-        <div className="grid items-start gap-3 py-2 sm:grid-cols-2">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 py-2 sm:grid-cols-2">
           <div>
             <input
               type="text"

@@ -25,7 +25,7 @@ function TrustedBy() {
      * an edge. A positioned section paints above the field; an unpositioned
      * one would have the canvas drawn over its heading.
      */
-    <section ref={section} className="relative pt-28 pb-16 lg:pt-36 lg:pb-20">
+    <section ref={section} className="relative pt-16 pb-12 sm:pt-28 sm:pb-16 lg:pt-36 lg:pb-20">
       <h2
         className="reveal-item px-6 text-center text-lg font-medium text-ink"
         style={{ '--i': 0 } as CSSProperties}

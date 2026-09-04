@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import App from './App.tsx'
+import { markHaptics } from './lib/haptics'
 import { markPlatform } from './lib/platform'
 import './index.css'
 
@@ -14,6 +15,12 @@ import './index.css'
  */
 if (typeof window !== 'undefined') window.scrollTo(0, 0)
 markPlatform()
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('touchstart', () => {}, { passive: true })
+}
+
+markHaptics()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

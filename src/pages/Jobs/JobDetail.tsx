@@ -23,7 +23,7 @@ const LEVEL: Record<string, string> = {
 function Section({ title, children, index }: { title: string; children: ReactNode; index: number }) {
   return (
     <section
-      className="hero-in grid gap-x-16 gap-y-6 border-t border-hairline py-12 lg:grid-cols-[20rem_minmax(0,1fr)] lg:py-14"
+      className="hero-in grid grid-cols-[minmax(0,1fr)] gap-x-16 gap-y-6 border-t border-hairline py-12 lg:grid-cols-[20rem_minmax(0,1fr)] lg:py-14"
       style={{ '--i': index } as CSSProperties}
     >
       <h2 className="text-xs font-bold tracking-[0.14em] text-ink-faint uppercase">{title}</h2>

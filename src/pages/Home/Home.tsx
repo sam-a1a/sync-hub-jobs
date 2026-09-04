@@ -32,7 +32,7 @@ function Home() {
        */}
       <div className="relative isolate">
         <HeroField />
-        <section ref={hero} className="hero-drift px-6 py-24 text-center lg:py-32">
+        <section ref={hero} className="hero-drift px-6 pt-16 pb-14 text-center sm:py-24 lg:py-32">
           {/*
            * The whole sentence as one accessible name. The visible line is built
            * out of three boxes with a word that changes every few seconds inside
@@ -41,7 +41,7 @@ function Home() {
            */}
           <h1
             aria-label="Where you and SYNC discover, match, apply, land, rise and grow together."
-            className="mx-auto text-5xl leading-[1.08] font-bold tracking-[-0.035em] text-ink sm:text-6xl lg:text-7xl"
+            className="mx-auto text-[clamp(1.75rem,8vw,2.75rem)] leading-[1.08] font-bold tracking-[-0.035em] text-ink sm:text-6xl lg:text-7xl"
           >
             <span aria-hidden="true" className="hero-in block" style={{ '--i': 0 } as CSSProperties}>
               Where you and
@@ -75,7 +75,7 @@ function Home() {
             >
               <span className="lg:justify-self-end">SYNC</span>
               <RotatingWord />
-              <span className="lg:justify-self-start">together.</span>
+              <span className="basis-full lg:basis-auto lg:justify-self-start">together.</span>
             </span>
           </h1>
 

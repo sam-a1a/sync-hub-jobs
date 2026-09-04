@@ -36,7 +36,7 @@ function ThemeToggle() {
       onClick={toggle}
       title={`Switch to ${next} mode`}
       aria-label={`Switch to ${next} mode`}
-      className="group relative inline-flex size-10 cursor-pointer items-center justify-center
+      className="group relative inline-flex size-10 shrink-0 cursor-pointer items-center justify-center
         rounded-full text-ink transition-[color,background-color,scale]
         duration-[var(--hover-fade)] ease-[var(--ease-standard)]
         hover:bg-[var(--hover-wash)] active:scale-90"

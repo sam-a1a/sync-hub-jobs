@@ -29,7 +29,7 @@ export function Bell() {
   }, [menu])
 
   return (
-    <div ref={box} className="relative" onMouseEnter={canHover ? menu.enter : undefined} onMouseLeave={canHover ? menu.leave : undefined}>
+    <div ref={box} className="static sm:relative" onMouseEnter={canHover ? menu.enter : undefined} onMouseLeave={canHover ? menu.leave : undefined}>
       <button
         type="button"
         aria-label={unread ? `${unread} unread notifications` : 'Notifications'}

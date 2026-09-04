@@ -14,6 +14,20 @@
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
+@custom-variant hover {
+  @media (hover: hover) {
+    &:hover {
+      @slot;
+    }
+  }
+
+  @media (hover: none) {
+    &:active {
+      @slot;
+    }
+  }
+}
+
 /*
  * Paper and ink flip with the theme, so they are plain custom properties that
  * `@theme inline` republishes as utilities. Everything in the palette below is
@@ -188,6 +202,30 @@
 
 html {
   background-color: var(--paper);
+
+  overflow-x: clip;
+
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+a,
+button,
+label,
+summary,
+input,
+select,
+textarea,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
 }
 
 /*

@@ -49,38 +49,38 @@ export function Studio({ children }: { children: ReactNode }) {
     <>
       <header className="fixed inset-x-0 top-0 z-50">
         <GlassBar bare={!scrolled}>
-          <div className="flex h-18 w-full items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex w-full flex-wrap items-center gap-x-3 px-4 pt-2.5 pb-1.5 sm:h-18 sm:flex-nowrap sm:justify-between sm:px-6 sm:py-0">
             <Link
               to="/"
               aria-label="SYNC Hub, home"
-              className="inline-flex items-center gap-2.5"
+              className="order-1 inline-flex shrink-0 items-center gap-2.5"
             >
               <img
                 src={asset("/sync-logo.png")}
                 alt=""
                 className="size-8 object-contain"
               />
-              <span className="hidden text-[15px] font-semibold tracking-[-0.01em] text-ink sm:inline">
+              <span className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
                 SYNC Hub
               </span>
             </Link>
             <nav
               aria-label="Your account"
-              className="flex items-center gap-5 sm:gap-7"
+              className="studio-nav order-3 -mx-4 flex w-full items-center gap-5 px-4 sm:order-2 sm:mx-0 sm:w-auto sm:gap-7 sm:px-0"
             >
               {NAV.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   className={({ isActive }) =>
-                    `text-sm font-medium transition-colors duration-300 ease-[var(--ease-standard)] ${isActive ? "text-teal-600 dark:text-teal-400" : "text-ink-muted hover:text-ink"}`
+                    `shrink-0 py-1 text-sm font-medium transition-colors duration-300 ease-[var(--ease-standard)] ${isActive ? "text-teal-600 dark:text-teal-400" : "text-ink-muted hover:text-ink"}`
                   }
                 >
                   {item.label}
                 </NavLink>
               ))}
             </nav>
-            <div className="flex items-center gap-1">
+            <div className="order-2 ml-auto flex shrink-0 items-center gap-1 sm:order-3 sm:ml-0">
               <Bell />
               <ThemeToggle />
               <AccountMenu enabled>
@@ -95,7 +95,7 @@ export function Studio({ children }: { children: ReactNode }) {
           </div>
         </GlassBar>
       </header>
-      <div className="min-h-dvh pt-24 pb-32">{children}</div>
+      <div className="min-h-dvh pt-30 pb-24 sm:pt-24 sm:pb-32">{children}</div>
     </>
   );
 }

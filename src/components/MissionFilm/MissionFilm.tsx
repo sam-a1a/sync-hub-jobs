@@ -186,8 +186,8 @@ function MissionFilm() {
   }
 
   return (
-    <section ref={section} className="film relative h-[190vh]">
-      <div className="sticky top-0 flex h-screen w-full items-center">
+    <section ref={section} className="film relative h-[190svh]">
+      <div className="sticky top-0 flex h-[100svh] w-full items-center">
         <div className="film-stage relative w-full overflow-hidden">
           {/*
            * No `autoPlay`. The observer starts it when the section is actually

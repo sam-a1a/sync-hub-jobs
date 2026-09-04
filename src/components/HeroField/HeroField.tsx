@@ -61,9 +61,9 @@ function HeroField() {
     <div
       ref={host}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 top-0 -bottom-28 -z-10 opacity-0
+      className="pointer-events-none absolute inset-x-0 top-0 -bottom-16 -z-10 opacity-0
         transition-opacity duration-[1800ms] ease-[var(--ease-standard)] data-ready:opacity-100
-        lg:-bottom-36 [&>canvas]:block [&>canvas]:size-full"
+        sm:-bottom-28 lg:-bottom-36 [&>canvas]:block [&>canvas]:size-full"
     />
   )
 }

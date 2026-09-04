@@ -141,13 +141,35 @@ function FlairButton({
       }
     }
 
-    /*
-     * Hover only, past here. On a touch screen there is no pointer to chase,
-     * and every one of these listeners would fire once on tap — the flair
-     * would bloom and then sit there, because nothing is ever going to send
-     * the `mouseleave` that clears it.
-     */
-    if (!window.matchMedia('(hover: hover)').matches) return
+    if (!window.matchMedia('(hover: hover)').matches) {
+      const onDown = (event: PointerEvent) => {
+        const { x, y } = getXY(event)
+
+        xSet(x)
+        ySet(y)
+
+        gsap.killTweensOf(flair)
+        gsap.to(flair, { scale: 1, duration: 0.28, ease: 'power2.out' })
+      }
+
+      const onUp = () => {
+        gsap.killTweensOf(flair)
+        gsap.to(flair, { scale: 0, duration: 0.32, ease: 'power2.out' })
+      }
+
+      button.addEventListener('pointerdown', onDown)
+      button.addEventListener('pointerup', onUp)
+      button.addEventListener('pointercancel', onUp)
+      button.addEventListener('pointerleave', onUp)
+
+      return () => {
+        button.removeEventListener('pointerdown', onDown)
+        button.removeEventListener('pointerup', onUp)
+        button.removeEventListener('pointercancel', onUp)
+        button.removeEventListener('pointerleave', onUp)
+        gsap.killTweensOf(flair)
+      }
+    }
 
     const onEnter = (event: MouseEvent) => {
       const { x, y } = getXY(event)
@@ -258,8 +280,8 @@ function FlairButton({
        * rather than as a reaction.
        */}
       <span
-        className="relative text-center transition-colors duration-[180ms] ease-[var(--ease-in-out-quart)]
-          group-hover:duration-[300ms]"
+        className="relative min-w-0 text-center transition-colors duration-[180ms]
+          ease-[var(--ease-in-out-quart)] group-hover:duration-[300ms]"
       >
         {children}
       </span>

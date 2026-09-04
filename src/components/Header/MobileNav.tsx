@@ -41,13 +41,13 @@ function MobileNav() {
   return (
     <div className="menu-panel pt-1 pb-5">
       {/*
-       * Aligned to the bar's own gutter — `px-6`, the same as the row above —
+       * Aligned to the bar's own gutter — `px-4`, the same as the row above —
        * so it starts on the same margin as the wordmark rather than on the
        * rows' inner padding.
        */}
-      <p className="px-6 pb-2 text-sm font-medium text-ink-muted">Free. For everyone.</p>
+      <p className="px-4 pb-2 text-sm font-medium text-ink-muted">Free. For everyone.</p>
 
-      <div className="px-4">
+      <div className="px-1">
         <button
           type="button"
           aria-expanded={featuresOpen}

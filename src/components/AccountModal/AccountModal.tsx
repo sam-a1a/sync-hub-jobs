@@ -68,21 +68,41 @@ function AccountModal({ open, onClose }: { open: boolean; onClose: () => void })
   }, [open, lenis])
 
   useEffect(() => {
-    if (!open || !PHONE) return
-    const viewport = window.visualViewport
+    if (!open) return
     const node = dialog.current
-    if (!viewport || !node) return
+    const viewport = window.visualViewport
+    if (!node || !viewport) return
+
+    const focused = () => {
+      const active = document.activeElement
+      if (!(active instanceof HTMLElement) || !node.contains(active)) return null
+      return active.matches('input, textarea, select') ? active : null
+    }
+
+    let nudge = 0
+    const reveal = (delay: number) => {
+      window.clearTimeout(nudge)
+      nudge = window.setTimeout(() => focused()?.scrollIntoView({ block: 'center' }), delay)
+    }
+
     const fit = () => {
       const lift = Math.max(0, window.innerHeight - viewport.offsetTop - viewport.height)
       node.style.setProperty('--sheet-lift', `${Math.round(lift)}px`)
       node.style.setProperty('--sheet-viewport', `${Math.round(viewport.height)}px`)
+      reveal(0)
     }
+
+    const onFocusIn = () => reveal(260)
+
     fit()
     viewport.addEventListener('resize', fit)
     viewport.addEventListener('scroll', fit)
+    node.addEventListener('focusin', onFocusIn)
     return () => {
       viewport.removeEventListener('resize', fit)
       viewport.removeEventListener('scroll', fit)
+      node.removeEventListener('focusin', onFocusIn)
+      window.clearTimeout(nudge)
       node.style.removeProperty('--sheet-lift')
       node.style.removeProperty('--sheet-viewport')
     }
@@ -126,7 +146,7 @@ function AccountModal({ open, onClose }: { open: boolean; onClose: () => void })
           </div>
         </div>
 
-        <div className="sheet-body">
+        <div className="sheet-body" data-lenis-prevent>
           <AuthPanel active={open} onDone={onClose} onView={setView} />
         </div>
       </div>
