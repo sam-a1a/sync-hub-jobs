@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import App from './App.tsx'
+import { markPlatform } from './lib/platform'
 import './index.css'
 
 /*
@@ -12,6 +13,7 @@ import './index.css'
  * been painted.
  */
 if (typeof window !== 'undefined') window.scrollTo(0, 0)
+markPlatform()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

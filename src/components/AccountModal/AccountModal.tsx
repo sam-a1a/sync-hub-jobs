@@ -4,6 +4,8 @@ import Icon from '../Icon'
 import Morph from '../Morph'
 import AuthPanel from './AuthPanel'
 import { authTitle, type View } from './authView'
+import { PHONE, PLATFORM } from '../../lib/platform'
+import { useSheetDrag } from '../../hooks/useSheetDrag'
 
 /**
  * The window the auth panel opens in.
@@ -65,10 +67,33 @@ function AccountModal({ open, onClose }: { open: boolean; onClose: () => void })
     }
   }, [open, lenis])
 
+  useEffect(() => {
+    if (!open || !PHONE) return
+    const viewport = window.visualViewport
+    const node = dialog.current
+    if (!viewport || !node) return
+    const fit = () => {
+      const lift = Math.max(0, window.innerHeight - viewport.offsetTop - viewport.height)
+      node.style.setProperty('--sheet-lift', `${Math.round(lift)}px`)
+      node.style.setProperty('--sheet-viewport', `${Math.round(viewport.height)}px`)
+    }
+    fit()
+    viewport.addEventListener('resize', fit)
+    viewport.addEventListener('scroll', fit)
+    return () => {
+      viewport.removeEventListener('resize', fit)
+      viewport.removeEventListener('scroll', fit)
+      node.style.removeProperty('--sheet-lift')
+      node.style.removeProperty('--sheet-viewport')
+    }
+  }, [open])
+
+  const drag = useSheetDrag(() => dialog.current, PHONE, onClose)
+
   return (
     <dialog
       ref={dialog}
-      className="account-dialog"
+      className="account-dialog account-sheet"
       /* Escape closes it natively; this is how React hears about that. */
       onClose={onClose}
       onClick={(event) => {
@@ -81,24 +106,29 @@ function AccountModal({ open, onClose }: { open: boolean; onClose: () => void })
       }}
     >
       <div className="account-panel">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-semibold tracking-tight text-ink">
-            <Morph token={view}>{authTitle(view)}</Morph>
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="inline-flex cursor-pointer items-center justify-center rounded-full p-2
-              text-ink-muted transition-[color,background-color,scale]
-              duration-[var(--hover-fade)] ease-[var(--ease-standard)]
-              hover:bg-[var(--hover-wash)] hover:text-ink active:scale-90"
-          >
-            <Icon name="close" size={20} />
-          </button>
+        <div className="sheet-grip" {...drag}>
+          <span className="sheet-handle" aria-hidden="true" />
+          <div className="sheet-head mb-6 flex items-center justify-between">
+            <h2 className="text-xl font-semibold tracking-tight text-ink">
+              <Morph token={view}>{authTitle(view)}</Morph>
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="sheet-close inline-flex cursor-pointer items-center justify-center rounded-full p-2
+                text-ink-muted transition-[color,background-color,scale]
+                duration-[var(--hover-fade)] ease-[var(--ease-standard)]
+                hover:bg-[var(--hover-wash)] hover:text-ink active:scale-90"
+            >
+              <Icon name="close" size={PLATFORM === 'ios' ? 16 : 20} />
+            </button>
+          </div>
         </div>
 
-        <AuthPanel active={open} onDone={onClose} onView={setView} />
+        <div className="sheet-body">
+          <AuthPanel active={open} onDone={onClose} onView={setView} />
+        </div>
       </div>
     </dialog>
   )

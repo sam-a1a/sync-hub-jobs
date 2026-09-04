@@ -1007,6 +1007,209 @@ html[data-vt='route']::view-transition-new(root) {
   box-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.7);
 }
 
+.sheet-handle {
+  display: none;
+}
+
+html[data-platform] .account-sheet {
+  --sheet-radius: 28px;
+  --sheet-inset: 24px;
+  margin: auto auto 0;
+  width: 100%;
+  max-width: 40rem;
+  max-height: none;
+  bottom: var(--sheet-lift, 0px);
+  opacity: 1;
+  scale: 1;
+  translate: 0 100%;
+}
+
+html[data-platform] .account-sheet[open] {
+  opacity: 1;
+  scale: 1;
+  translate: 0 0;
+}
+
+@starting-style {
+  html[data-platform] .account-sheet[open] {
+    opacity: 1;
+    scale: 1;
+    translate: 0 100%;
+  }
+}
+
+html[data-platform] .account-sheet[data-drag] {
+  transition: none;
+}
+
+html[data-platform] .account-sheet::backdrop,
+html[data-platform] .account-sheet[open]::backdrop {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-platform] .account-sheet .account-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(var(--sheet-viewport, 100dvh) - 3rem);
+  padding: 0;
+  border: 0;
+  border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+  background-color: var(--paper-raised);
+  box-shadow: none;
+}
+
+html[data-platform] .sheet-grip {
+  flex: none;
+  padding-inline: var(--sheet-inset);
+  touch-action: none;
+}
+
+html[data-platform] .sheet-handle {
+  display: block;
+  margin-inline: auto;
+  border-radius: 999px;
+}
+
+html[data-platform] .sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--sheet-inset) calc(var(--sheet-inset) + env(safe-area-inset-bottom, 0px));
+}
+
+html[data-platform='android'] .account-sheet {
+  transition:
+    translate 200ms cubic-bezier(0.3, 0, 0.8, 0.15),
+    bottom 300ms var(--ease-standard),
+    display 200ms allow-discrete,
+    overlay 200ms allow-discrete;
+}
+
+html[data-platform='android'] .account-sheet[open] {
+  transition:
+    translate 400ms cubic-bezier(0.05, 0.7, 0.1, 1),
+    bottom 300ms var(--ease-standard),
+    display 400ms allow-discrete,
+    overlay 400ms allow-discrete;
+}
+
+html[data-platform='android'] .account-sheet::backdrop {
+  transition: background-color 200ms var(--ease-standard);
+}
+
+html[data-platform='android'] .account-sheet[open]::backdrop {
+  background-color: rgb(0 0 0 / 0.32);
+  transition: background-color 400ms cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+
+html[data-platform='android'] .sheet-handle {
+  width: 32px;
+  height: 4px;
+  margin-block: 22px;
+  background-color: color-mix(in srgb, var(--ink) 40%, transparent);
+}
+
+html[data-platform='android'] .sheet-head h2 {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+html[data-platform='android'] .account-sheet .button {
+  height: 48px;
+}
+
+html[data-platform='android'] .account-sheet .button[data-busy] {
+  width: 48px;
+}
+
+html[data-platform='ios'] .account-sheet {
+  --sheet-radius: 24px;
+  --sheet-inset: 16px;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition:
+    translate 400ms cubic-bezier(0.32, 0.72, 0, 1),
+    bottom 300ms var(--ease-standard),
+    display 400ms allow-discrete,
+    overlay 400ms allow-discrete;
+}
+
+html[data-platform='ios'] .account-sheet[open] {
+  transition:
+    translate 520ms cubic-bezier(0.32, 0.72, 0, 1),
+    bottom 300ms var(--ease-standard),
+    display 520ms allow-discrete,
+    overlay 520ms allow-discrete;
+}
+
+html[data-platform='ios'] .account-sheet::backdrop {
+  transition: background-color 400ms var(--ease-standard);
+}
+
+html[data-platform='ios'] .account-sheet[open]::backdrop {
+  background-color: rgb(0 0 0 / 0.4);
+  transition: background-color 520ms var(--ease-standard);
+}
+
+html[data-platform='ios'] .sheet-handle {
+  width: 36px;
+  height: 5px;
+  margin-block: 6px 0;
+  background-color: rgb(60 60 67 / 0.3);
+}
+
+html.dark[data-platform='ios'] .sheet-handle {
+  background-color: rgb(235 235 245 / 0.3);
+}
+
+html[data-platform='ios'] .sheet-head {
+  position: relative;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 8px;
+  margin-bottom: 20px;
+}
+
+html[data-platform='ios'] .sheet-head h2 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+html[data-platform='ios'] .sheet-close {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 50%;
+  translate: 0 -50%;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background-color: rgb(120 120 128 / 0.16);
+  color: rgb(60 60 67 / 0.6);
+}
+
+html.dark[data-platform='ios'] .sheet-close {
+  background-color: rgb(120 120 128 / 0.24);
+  color: rgb(235 235 245 / 0.6);
+}
+
+html[data-platform='ios'] .account-sheet .button {
+  height: 50px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+html[data-platform='ios'] .account-sheet .button[data-busy] {
+  width: 50px;
+}
+
+html[data-platform='ios'] .account-sheet input {
+  height: 46px;
+  font-size: 17px;
+}
+
 .account-input {
   width: 100%;
   border-radius: 10px;
@@ -1256,6 +1459,10 @@ html[data-vt='route']::view-transition-new(root) {
   .button-spinner,
   .account-dialog,
   .account-dialog::backdrop,
+  html[data-platform] .account-sheet,
+  html[data-platform] .account-sheet[open],
+  html[data-platform] .account-sheet::backdrop,
+  html[data-platform] .account-sheet[open]::backdrop,
   .morph,
   .morph-text,
   .rule,
