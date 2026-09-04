@@ -86,7 +86,8 @@ function AccountModal({ open, onClose }: { open: boolean; onClose: () => void })
     }
 
     const fit = () => {
-      const lift = Math.max(0, window.innerHeight - viewport.offsetTop - viewport.height)
+      const frame = document.documentElement.clientHeight
+      const lift = Math.max(0, frame - viewport.offsetTop - viewport.height)
       node.style.setProperty('--sheet-lift', `${Math.round(lift)}px`)
       node.style.setProperty('--sheet-viewport', `${Math.round(viewport.height)}px`)
       reveal(0)

@@ -6,6 +6,7 @@ import Button from '../ui/Button'
 import Field, { inputClass } from '../ui/Field'
 import { asName } from '../../lib/format'
 import { signIn } from '../../lib/account'
+import { useMedia } from '../../hooks/useMedia'
 import type { View } from './authView'
 
 /**
@@ -24,7 +25,10 @@ const INTRO: Record<View, string> = {
   signIn: 'An account keeps the roles you have saved and prefills your applications.',
   reset: 'Please enter your email address and we will send you the password reset instructions.',
   create: 'A few details now, and we will not ask for them again.',
+  createPassword: 'Something only you know, and you are in.',
 }
+
+const NARROW = '(width < 40rem)'
 
 /*
  * Two labels each: the long one is what a screen reader is given, the short one
@@ -56,6 +60,26 @@ const FOOT_LINK =
 
 /** Matches the input's own colour transition, so the text is gone before it changes. */
 const FADE_MS = 200
+
+/**
+ * Which of the two the create view is on, said inline rather than on a line of
+ * its own.
+ *
+ * A row to itself is the obvious build and it costs twenty pixels of a panel
+ * that, with the keyboard up, has about three hundred — which is the whole
+ * reason the view was split in the first place. The dot is the separator the
+ * footer and the byline already use, so the site has one.
+ */
+function Step({ of }: { of: '1' | '2' }) {
+  return (
+    <>
+      <span className="font-medium text-ink">Step {of} of 2</span>
+      <span aria-hidden className="px-1.5 text-ink-faint">
+        &middot;
+      </span>
+    </>
+  )
+}
 
 /**
  * A password field with the eye on it. Two of these — one to sign in with, one
@@ -148,6 +172,8 @@ function AuthPanel({
   /** Which of the three views is up, for the host's heading. */
   onView?: (view: View) => void
 }) {
+  const stepped = useMedia(NARROW)
+
   const [view, setView] = useState<View>('signIn')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -251,15 +277,26 @@ function AuthPanel({
   const emailReady = EMAIL.test(email)
   const matches = confirm.length > 0 && confirm === password
 
+  const identified = name.trim().length > 1 && emailReady
+  const chosen = met.every(Boolean) && matches
+
   const ready =
     view === 'reset'
       ? emailReady
-      : view === 'create'
-        ? name.trim().length > 1 && emailReady && met.every(Boolean) && matches
-        : emailReady && password.length > 0
+      : view === 'createPassword'
+        ? chosen
+        : view === 'create'
+          ? identified && (stepped || chosen)
+          : emailReady && password.length > 0
 
   const submitLabel =
-    view === 'reset' ? 'Send Instructions' : view === 'create' ? 'Create Account' : 'Sign in'
+    view === 'reset'
+      ? 'Send Instructions'
+      : view === 'create' && stepped
+        ? 'Continue'
+        : view === 'create' || view === 'createPassword'
+          ? 'Create Account'
+          : 'Sign in'
 
   /* The first word of whatever was typed, for the welcome. */
   const [greeting = 'there'] = name.trim().split(/\s+/)
@@ -276,7 +313,16 @@ function AuthPanel({
         <p className="pb-5 text-sm text-ink-muted">{INTRO.reset}</p>
       </Collapse>
       <Collapse open={view === 'create' && asking}>
-        <p className="pb-5 text-sm text-ink-muted">{INTRO.create}</p>
+        <p className="pb-5 text-sm text-ink-muted">
+          {stepped ? <Step of="1" /> : null}
+          {INTRO.create}
+        </p>
+      </Collapse>
+      <Collapse open={view === 'createPassword' && asking}>
+        <p className="pb-5 text-sm text-ink-muted">
+          <Step of="2" />
+          {INTRO.createPassword}
+        </p>
       </Collapse>
 
       <form
@@ -311,7 +357,11 @@ function AuthPanel({
             send('reset')
             return
           }
-          if (view === 'create') {
+          if (view === 'create' && stepped) {
+            go('createPassword')
+            return
+          }
+          if (view === 'create' || view === 'createPassword') {
             send('created')
             return
           }
@@ -347,10 +397,11 @@ function AuthPanel({
         </Collapse>
 
         {/*
-         * The one field every view asks for, so it folds for none of them —
-         * only for the confirmation, which has already quoted it back.
+         * Every view that is still collecting asks for this, so it folds only
+         * for the second create step — which already has it — and for the
+         * confirmation, which quotes it back.
          */}
-        <Collapse open={asking}>
+        <Collapse open={asking && view !== 'createPassword'}>
           <div className="pb-5">
             <Field
               label="Email Address"
@@ -388,7 +439,7 @@ function AuthPanel({
           </div>
         </Collapse>
 
-        <Collapse open={view === 'create' && asking}>
+        <Collapse open={(view === 'createPassword' || (view === 'create' && !stepped)) && asking}>
           <div className="grid gap-5 pb-5">
             <Field label="Password" htmlFor="account-new-password" required>
               <PasswordBox
@@ -556,6 +607,10 @@ function AuthPanel({
                   Join Us!
                 </button>
               </>
+            ) : view === 'createPassword' ? (
+              <button type="button" onClick={() => go('create')} className={FOOT_LINK}>
+                Back a Step
+              </button>
             ) : (
               <button type="button" onClick={() => go('signIn')} className={FOOT_LINK}>
                 Back to Login
