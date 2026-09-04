@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import Icon from '../Icon'
 import { signOut } from '../../lib/account'
+import { useCanHover } from '../../hooks/useCanHover'
 import { useHoverMenu } from '../../hooks/useHoverMenu'
 
 /**
@@ -39,20 +40,33 @@ function AccountMenu({
    * greeting is a perfectly ordinary path across the bar.
    */
   const menu = useHoverMenu()
+  const canHover = useCanHover()
+  const box = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const onLanding = useLocation().pathname === '/'
 
+  useEffect(() => {
+    if (!menu.open) return
+    const away = (event: PointerEvent) => {
+      if (!box.current?.contains(event.target as Node)) menu.close()
+    }
+    document.addEventListener('pointerdown', away)
+    return () => document.removeEventListener('pointerdown', away)
+  }, [menu])
+
   return (
     <div
+      ref={box}
       className="relative"
-      onMouseEnter={enabled ? menu.enter : undefined}
+      onClick={enabled && !canHover ? () => (menu.open ? menu.close() : menu.enter()) : undefined}
+      onMouseEnter={enabled && canHover ? menu.enter : undefined}
       /*
        * On the wrapper, so the card counts as inside. It is absolutely
        * positioned but still a DOM child, and `mouseleave` does not fire for a
        * pointer moving onto a descendant — which is what lets the card be
        * reachable without a grace period.
        */
-      onMouseLeave={enabled ? menu.leave : undefined}
+      onMouseLeave={enabled && canHover ? menu.leave : undefined}
     >
       {children}
 

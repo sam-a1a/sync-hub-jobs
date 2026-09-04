@@ -12,6 +12,7 @@ import { useHoverMenu } from '../../hooks/useHoverMenu'
 import { firstName, useAccount, useStartAction } from '../../lib/account'
 import MegaPanel from './MegaPanel'
 import MobileNav from './MobileNav'
+import { asset } from '../../lib/asset'
 
 /**
  * Whether the page has moved at all.
@@ -211,7 +212,7 @@ function Header() {
             className="relative z-10 inline-flex items-center gap-2.5"
             onMouseEnter={canHover ? menu.close : undefined}
           >
-            <img src="/sync-logo.png" alt="" className="size-9 shrink-0 object-contain" />
+            <img src={asset("/sync-logo.png")} alt="" className="size-9 shrink-0 object-contain" />
             {/*
              * The wordmark is `alt` text made visible, so the link's own
              * `aria-label` is what a screen reader gets and this is hidden

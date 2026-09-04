@@ -5,6 +5,7 @@ import BrandIcon, { type BrandName } from '../BrandIcon'
 import Globe from '../Globe'
 import { prefersReducedMotion } from '../../lib/transition'
 import { openAccountModal, useAccount } from '../../lib/account'
+import { asset } from '../../lib/asset'
 
 /**
  * The footer, and the reveal it slides out from under the page with.
@@ -240,7 +241,7 @@ function Content({ ref }: { ref?: React.Ref<HTMLDivElement> }) {
            * beside them, which on a phone is the only place in the footer with
            * any room in it.
            */}
-          <div className="grid grid-cols-[1fr_1fr_auto] items-start gap-6 lg:contents">
+          <div className="grid grid-cols-3 items-start gap-6 lg:contents">
             <FooterColumn title={COLUMNS[0].title}>
               {COLUMNS[0].links.map((link) =>
                 /*
@@ -288,17 +289,12 @@ function Content({ ref }: { ref?: React.Ref<HTMLDivElement> }) {
              * The override costs nothing above `lg`, where the wrapper is
              * `contents` and its `items-start` no longer applies to anything.
              */}
-            <div className="flex flex-col items-center gap-2 self-end lg:hidden">
-              <Mark className="size-20" />
-              <ByLine centred small className="max-w-[10rem]" />
-            </div>
+            <FooterColumn title="For Employers">
+              <a href="#" className={FOOTER_ITEM}>
+                Explore &amp; Request Access
+              </a>
+            </FooterColumn>
           </div>
-
-          <FooterColumn title="For Employers">
-            <a href="#" className={FOOTER_ITEM}>
-              Explore &amp; Request Access
-            </a>
-          </FooterColumn>
         </div>
 
         {/*
@@ -310,6 +306,11 @@ function Content({ ref }: { ref?: React.Ref<HTMLDivElement> }) {
          */}
         <div className="-mx-6 mt-12 h-[300px] lg:hidden">
           <Globe align="centre" className="size-full" />
+        </div>
+
+        <div className="mt-8 flex flex-col items-center gap-2 lg:hidden">
+          <Mark className="size-20" />
+          <ByLine centred small className="max-w-[10rem]" />
         </div>
 
         {/*
@@ -380,7 +381,7 @@ function Content({ ref }: { ref?: React.Ref<HTMLDivElement> }) {
 function Mark({ className = '' }: { className?: string }) {
   return (
     <img
-      src="/sync-logo.png"
+      src={asset("/sync-logo.png")}
       alt=""
       aria-hidden
       width={160}

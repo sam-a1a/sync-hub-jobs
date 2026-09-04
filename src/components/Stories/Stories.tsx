@@ -2,6 +2,7 @@ import { useRef, type CSSProperties } from 'react'
 import BrandIcon, { type BrandName } from '../BrandIcon'
 import { useReveal } from '../../hooks/useReveal'
 import { useSectionTone } from '../../hooks/useSectionTone'
+import { asset } from '../../lib/asset'
 
 /**
  * The outcome wall: a face, a mark, and something the person said.
@@ -45,7 +46,7 @@ const STORIES: Story[] = [
     person: 'Placeholder Name',
     role: 'Staff Engineer',
     tone: 'story-tone-coral',
-    image: '/images/stories/stripe.jpg',
+    image: asset('/images/stories/stripe.jpg'),
   },
   {
     company: 'figma',
@@ -55,7 +56,7 @@ const STORIES: Story[] = [
     person: 'Placeholder Name',
     role: 'Product Designer',
     tone: 'story-tone-ocean',
-    image: '/images/stories/figma.jpg',
+    image: asset('/images/stories/figma.jpg'),
   },
   {
     company: 'notion',
@@ -65,7 +66,7 @@ const STORIES: Story[] = [
     person: 'Placeholder Name',
     role: 'Operations Lead',
     tone: 'story-tone-amber',
-    image: '/images/stories/notion.jpg',
+    image: asset('/images/stories/notion.jpg'),
   },
 ]
 

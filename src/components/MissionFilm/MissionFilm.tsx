@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Icon from '../Icon'
 import TransportIcons from '../TransportIcons'
 import { useScrollProgress } from '../../hooks/useScrollProgress'
+import { asset } from '../../lib/asset'
 
 /**
  * The film, and the title that rises onto it.
@@ -17,7 +18,7 @@ import { useScrollProgress } from '../../hooks/useScrollProgress'
  * `useScrollProgress`. Everything else in `styles/motion.css` is a reading of
  * that one number.
  */
-const SRC = '/video/mission.mp4'
+const SRC = asset('/video/mission.mp4')
 
 /*
  * The ring's geometry, in the *button's* pixels.

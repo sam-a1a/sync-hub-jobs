@@ -5,7 +5,7 @@ import WarningModal from '../../components/WarningModal'
 import { panelInputClass } from '../../components/ui/Field'
 import { changePassword, signIn, signOut, useAccount } from '../../lib/account'
 import { asName } from '../../lib/format'
-import { resetStudio } from '../../lib/profile/store'
+import { resetStudio, setProfile, useStudio } from '../../lib/profile/store'
 
 const PREFS_KEY = 'sync.jobs.prefs'
 
@@ -59,9 +59,11 @@ function Section({ title, note, children, index }: { title: string; note: ReactN
   )
 }
 
-function Row({ children, align = 'center' }: { children: ReactNode; align?: 'center' | 'start' }) {
+function Row({ children, align = 'center', className = '' }: { children: ReactNode; align?: 'center' | 'start'; className?: string }) {
   return (
-    <div className={`grid grid-cols-[minmax(0,1fr)_auto] gap-6 py-4 sm:gap-12 ${align === 'start' ? 'items-start' : 'items-center'}`}>
+    <div
+      className={`grid grid-cols-[minmax(0,1fr)_auto] gap-6 py-4 sm:gap-12 ${align === 'start' ? 'items-start' : 'items-center'} ${className}`}
+    >
       {children}
     </div>
   )
@@ -144,11 +146,14 @@ function Secret({ value, placeholder, onChange }: { value: string; placeholder: 
 
 function SettingsPage() {
   const account = useAccount()
+  const { profile } = useStudio()
   const navigate = useNavigate()
 
   const [keptName, setKeptName] = useState(account?.name ?? '')
   const [name, setName] = useState(account?.name ?? '')
   const [keptPrefs, setKeptPrefs] = useState(readPrefs)
+  const [keptFindable, setKeptFindable] = useState(profile.is_searchable)
+  const [findable, setFindable] = useState(profile.is_searchable)
   const [prefs, setPrefs] = useState(readPrefs)
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -163,7 +168,11 @@ function SettingsPage() {
   const wantsPassword = next.length > 0 || confirm.length > 0
 
   const dirty =
-    name !== keptName || prefs.cv !== keptPrefs.cv || prefs.moves !== keptPrefs.moves || wantsPassword
+    name !== keptName ||
+    prefs.cv !== keptPrefs.cv ||
+    prefs.moves !== keptPrefs.moves ||
+    findable !== keptFindable ||
+    wantsPassword
   const named = name.trim().length > 0
   const valid = named && (!wantsPassword || (strong && matches))
   const canSave = dirty && valid && !saving
@@ -176,6 +185,8 @@ function SettingsPage() {
     setKeptName(name)
     writePrefs(prefs)
     setKeptPrefs(prefs)
+    if (findable !== keptFindable) setProfile({ ...profile, is_searchable: findable })
+    setKeptFindable(findable)
 
     if (!wantsPassword) {
       setSaving(false)
@@ -284,6 +295,11 @@ function SettingsPage() {
             </div>
           </div>
         </div>
+        <Row className="pt-8">
+          <Key title="Let recruiters find me" note="Adds you to global search." />
+          <Switch on={findable} label="Let recruiters find me" onChange={setFindable} />
+        </Row>
+
         <div className="unfold" data-open={wantsPassword ? '' : undefined}>
           <div>
             <div className="pt-7 pb-2">

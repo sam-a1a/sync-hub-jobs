@@ -1,5 +1,6 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import Icon from '../Icon'
+import { useCanHover } from '../../hooks/useCanHover'
 import { useHoverMenu } from '../../hooks/useHoverMenu'
 import { timeAgo } from '../../lib/relative-time'
 import { readAllNotifications, readNotification, useStudio } from '../../lib/profile/store'
@@ -14,11 +15,21 @@ const GLYPH: Record<NotificationKind, 'auto_awesome' | 'close' | 'work'> = {
 export function Bell() {
   const { notifications } = useStudio()
   const menu = useHoverMenu()
+  const canHover = useCanHover()
   const box = useRef<HTMLDivElement>(null)
   const unread = notifications.filter((n) => !n.read).length
 
+  useEffect(() => {
+    if (!menu.open) return
+    const away = (event: PointerEvent) => {
+      if (!box.current?.contains(event.target as Node)) menu.close()
+    }
+    document.addEventListener('pointerdown', away)
+    return () => document.removeEventListener('pointerdown', away)
+  }, [menu])
+
   return (
-    <div ref={box} className="relative" onMouseEnter={menu.enter} onMouseLeave={menu.leave}>
+    <div ref={box} className="relative" onMouseEnter={canHover ? menu.enter : undefined} onMouseLeave={canHover ? menu.leave : undefined}>
       <button
         type="button"
         aria-label={unread ? `${unread} unread notifications` : 'Notifications'}

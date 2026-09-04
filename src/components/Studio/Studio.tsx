@@ -5,6 +5,7 @@ import AccountMenu from "../Header/AccountMenu";
 import ThemeToggle from "../ThemeToggle";
 import { Bell } from "./Bell";
 import { firstName, useAccount } from "../../lib/account";
+import { asset } from '../../lib/asset'
 
 const NAV = [
   { to: "/jobs", label: "Jobs" },
@@ -55,7 +56,7 @@ export function Studio({ children }: { children: ReactNode }) {
               className="inline-flex items-center gap-2.5"
             >
               <img
-                src="/sync-logo.png"
+                src={asset("/sync-logo.png")}
                 alt=""
                 className="size-8 object-contain"
               />

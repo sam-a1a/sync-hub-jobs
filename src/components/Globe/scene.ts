@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { getTheme, resolveTheme, subscribeToTheme, watchSystemAppearance } from '../../lib/theme'
 import { prefersReducedMotion } from '../../lib/transition'
+import { asset } from '../../lib/asset'
 
 /*
  * The globe.
@@ -111,7 +112,7 @@ interface Arc {
  */
 async function landDots(count: number): Promise<Float32Array> {
   const image = new Image()
-  image.src = '/images/globe/land.png'
+  image.src = asset('/images/globe/land.png')
   await image.decode()
   const canvas = document.createElement('canvas')
   canvas.width = image.naturalWidth
