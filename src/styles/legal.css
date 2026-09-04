@@ -1,0 +1,173 @@
+/*
+ * Legal document typography
+ * ---------------------------------------------------------------------------
+ *
+ * Numbered sections that get their numbers from CSS counters rather than from
+ * the stored text, so inserting a clause in the middle does not mean
+ * renumbering everything after it — and so the visible number and the one
+ * `plainText()` writes for the clipboard cannot drift apart, both being the
+ * same counter walked by the same rule.
+ */
+.legal-body {
+  counter-reset: legal-section;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--ink);
+}
+
+.legal-body > * + * {
+  margin-top: 1.4rem;
+}
+
+.legal-body > :first-child {
+  margin-top: 0;
+}
+
+.legal-h2,
+.legal-h3 {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  /* Clears the sticky header when the contents rail jumps to a section. */
+  scroll-margin-top: 7rem;
+}
+
+.legal-body > .legal-h2 {
+  counter-increment: legal-section;
+  counter-reset: legal-subsection;
+  margin-top: 3.25rem;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.12;
+}
+
+.legal-body > .legal-h3 {
+  counter-increment: legal-subsection;
+  margin-top: 2.25rem;
+  font-size: clamp(1.15rem, 1.6vw, 1.5rem);
+  line-height: 1.25;
+}
+
+.legal-h2::before {
+  content: counter(legal-section) '. ';
+}
+
+.legal-h3::before {
+  content: counter(legal-section) '.' counter(legal-subsection) '. ';
+}
+
+.legal-ul,
+.legal-ol {
+  display: grid;
+  gap: 0.65rem;
+  padding-inline-start: 1.5rem;
+}
+
+.legal-ul > li {
+  list-style: disc;
+}
+
+.legal-ol > li {
+  list-style: decimal;
+}
+
+.legal-ul > li::marker,
+.legal-ol > li::marker {
+  color: var(--ink-faint);
+}
+
+/*
+ * Paper.
+ *
+ * This is what both the Print and the Save as PDF buttons produce, because
+ * they open the same dialog — the browser's own PDF writer keeps the text
+ * selectable, the links live and the pagination sane, which is more than any
+ * client-side generator manages from a screenshot of the page.
+ */
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  /*
+   * A reader printing from the dark theme wants a readable page, not a black
+   * one — and most browsers drop the background anyway, which would leave pale
+   * text on white. Both themes are overridden rather than only `.dark`, so
+   * there is one set of paper colours regardless of where it started.
+   */
+  :root,
+  :root.dark {
+    color-scheme: light;
+
+    --ink: #000000;
+    --ink-muted: #444444;
+    --ink-faint: #666666;
+
+    --paper: #ffffff;
+    --paper-raised: #ffffff;
+    --paper-sunken: #ffffff;
+    --paper-toned: #ffffff;
+    --hairline: #bbbbbb;
+  }
+
+  html,
+  body {
+    background: #ffffff;
+    /* Lenis leaves the document at whatever height it was driving; paper does
+       not have a viewport to be taller than. */
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  header,
+  footer {
+    display: none !important;
+  }
+
+  .legal-body {
+    font-size: 10.5pt;
+    line-height: 1.55;
+    grid-column: 1 / -1;
+  }
+
+  /* A heading at the foot of a page with its first paragraph overleaf is the
+     one break worth spending rules to prevent. */
+  .legal-h2,
+  .legal-h3 {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  .legal-body > .legal-h2 {
+    margin-top: 1.6rem;
+  }
+
+  .legal-body > .legal-h3 {
+    margin-top: 1.1rem;
+  }
+
+  .legal-body :is(p, li) {
+    /* Never one line of a paragraph alone at either end of a page. */
+    orphans: 3;
+    widows: 3;
+  }
+
+  .legal-body :is(ul, ol) > li {
+    break-inside: avoid;
+  }
+
+  /*
+   * A link that was worth clicking is worth reading on paper. Same-site and
+   * `mailto:` hrefs are left alone: a bare "/privacy" printed after the words
+   * tells nobody anything, and an address is already written out where it
+   * appears.
+   */
+  .legal-body a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+
+  a {
+    text-decoration: none;
+  }
+}

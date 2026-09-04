@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/sync-logo.png" />
+    <!--
+      The icon font, from Google Fonts, cut to the names the site actually
+      uses. `icon_names` has to be alphabetical; `display=block` so a glyph
+      is empty rather than a stray word while the font is on its way. The
+      names here and the codepoints in `components/Icon` are the two halves
+      of one list: add to both.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=add,apartment,arrow_drop_down,arrow_forward,auto_awesome,badge,call,check,check_circle,close,close_small,code,copy_all,crop_21_9,dark_mode,delete,description,edit,filter_list,filter_list_off,folder_open,history_edu,language,light_mode,link,location_on,logout,mail,notifications,open_in_new,person,picture_as_pdf,print,psychology,remove,rocket_launch,save,schedule,search,school,star,translate,trending_up,undo,upload,verified,visibility,visibility_off,volume_down,volume_off,work&display=block" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#51c2ba" />
+    <title>SYNC Hub - Jobs</title>
+    <script>
+      /*
+       * The theme, before the first paint.
+       *
+       * This has to be inline and blocking. Anything that waits for the module
+       * graph — including `main.tsx` — runs after the browser has already
+       * painted a white page, and someone on dark mode sees a full-screen
+       * flash on every load. It is duplicated logic with `lib/theme.ts` and
+       * that is the price; the storage key and the class name are the whole of
+       * the contract between them.
+       */
+      /*
+       * Start at the top, every time.
+       *
+       * Browsers restore the scroll position on reload, which for a page whose
+       * hero, film and gallery are all choreographed to a scroll offset means
+       * refreshing drops you into the middle of three half-finished
+       * animations. Turning restoration off here rather than scrolling to zero
+       * later is the difference between never leaving the top and visibly
+       * jumping back to it.
+       */
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('sync.jobs.theme')
+          /* Nothing stored means dark, whatever the OS says — see lib/theme.ts. */
+          var dark =
+            stored === null ||
+            stored === 'dark' ||
+            (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        } catch (e) {
+          /* Private browsing, or no matchMedia. Dark is still the default. */
+          document.documentElement.classList.add('dark')
+          document.documentElement.style.colorScheme = 'dark'
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

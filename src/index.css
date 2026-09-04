@@ -1,0 +1,277 @@
+@import "tailwindcss";
+@import "./fonts/fonts.css";
+@import "./styles/glass.css";
+@import "./styles/motion.css";
+@import "./styles/legal.css";
+
+/*
+ * Dark mode is a class on <html>, not a media query.
+ *
+ * The toggle in the header is an override that has to beat the operating
+ * system, and `prefers-color-scheme` — which is what Tailwind's `dark:` matches
+ * out of the box — cannot be beaten by anything the page does. `lib/theme.ts`
+ * still consults the OS; it just resolves the answer to a class first.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Paper and ink flip with the theme, so they are plain custom properties that
+ * `@theme inline` republishes as utilities. Everything in the palette below is
+ * a fixed hex and lives in `@theme` directly.
+ *
+ * Paper is pure white and pure black on purpose. The glass in the header is a
+ * wash of paper over whatever is behind it, so paper is also what the bar is
+ * made of — a tinted paper would tint the bar.
+ */
+:root {
+  --paper: #ffffff;
+  --ink: #074742;
+  --ink-muted: #4a6b68;
+  --hairline: #e0f4f2;
+  --hover-wash: rgb(7 71 66 / 0.09);
+  --ink-faint: #a8c2bf;
+  /*
+   * One step *below* paper, for surfaces the page sits on rather than in — the
+   * footer, chiefly. It reads as the page's floor, which is what lets the
+   * footer slide out from under the content without looking like more content.
+   */
+  --paper-sunken: #f6faf9;
+  /*
+   * The tone a section can put on the whole page. Warm rather than another
+   * teal: the point is that it reads as a different room, and a neighbouring
+   * shade of the brand colour reads as a rendering error instead.
+   */
+  --paper-toned: #f4f1ec;
+  /* One step above paper, for controls sitting on it. */
+  --paper-raised: #ffffff;
+}
+
+.dark {
+  --paper: #000000;
+  --ink: #e0f4f2;
+  --ink-muted: #8fa9a6;
+  --hairline: #1d3b38;
+  --hover-wash: rgb(224 244 242 / 0.13);
+  --ink-faint: #4a6461;
+  --paper-sunken: #070b0a;
+  --paper-toned: #0f0d0b;
+  --paper-raised: #0c1211;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-hairline: var(--hairline);
+  --color-ink-faint: var(--ink-faint);
+  --color-paper-sunken: var(--paper-sunken);
+  --color-paper-raised: var(--paper-raised);
+}
+
+@theme {
+  --font-google-sans: 'Google Sans', 'Noto Sans Arabic', sans-serif;
+  --font-noto-arabic: 'Noto Sans Arabic', sans-serif;
+
+  /* The teal family: the two brand colours with their tints and shades. */
+  --color-teal-50: #e0f4f2;
+  --color-teal-200: #a4ded9;
+  --color-teal-400: #51c2ba;
+  --color-teal-500: #2ba69c;
+  --color-teal-600: #0e867e;
+  --color-teal-700: #0b6b64;
+  --color-teal-900: #074742;
+
+  --color-primary: #51c2ba;
+  --color-secondary: #0e867e;
+
+  /* Warm complements, for anything that has to interrupt the teal. */
+  --color-coral: #e76f51;
+  --color-apricot: #f4a261;
+  --color-brick: #c94f4f;
+  --color-peach: #f8c4a8;
+
+  /* Analogous hues, for gradients and secondary illustration. */
+  --color-emerald: #2fa786;
+  --color-ocean: #3a8fb5;
+  --color-steel: #26647e;
+
+  /* Warm neutrals, for breathing room. */
+  --color-offwhite: #faf6f0;
+  --color-cream: #f2ebe3;
+  --color-sand: #e5d9c3;
+  --color-warmgray: #8a8272;
+
+  /* Dark anchors. */
+  --color-charcoal: #1d3b38;
+  --color-slate-deep: #22333b;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /*
+   * One duration for every hover that changes a colour, a fill or a wash.
+   *
+   * It is shared rather than repeated because these things sit next to each
+   * other — a label and the icon beside it, a row of nav items the pointer
+   * runs along — and two of them fading at different rates is more obvious
+   * than either rate being wrong. Long enough to be seen as a fade: paired
+   * with `--ease-standard` the ramp is still only a third done at 100ms,
+   * which is what reads as smooth rather than as a state flip.
+   */
+  --hover-fade: 320ms;
+
+  /*
+   * The menu's glide, matched to the page's.
+   *
+   * Lenis eases its scroll with `1.001 - 2^(-10t)` over 1.2s — expo-out. A
+   * panel dropping out of the bar is the only other thing on this page that
+   * travels a real distance, so it moving on a different curve is the kind of
+   * mismatch you feel without being able to name: the page glides, the menu
+   * snaps.
+   *
+   * `cubic-bezier(0.16, 1, 0.3, 1)` is that same expo-out, sampled: it tracks
+   * Lenis to within 0.015 across the whole range, where `--ease-out` — a
+   * quintic, and fine for what it does elsewhere — is off by 0.22 and lands
+   * visibly earlier. The duration is well short of Lenis' 1.2s because the
+   * panel travels a couple of hundred pixels rather than a screenful, and an
+   * expo curve is already half done in the first fifth of it.
+   */
+  --ease-glide: cubic-bezier(0.16, 1, 0.3, 1);
+  --menu-glide: 620ms;
+
+  /*
+   * The headline's rotating word. The slowest thing on the page, because it is
+   * the only one nobody asked for: a hover answers a pointer and can afford to
+   * be quick, but this changes on its own while you are reading it, and
+   * anything abrupt reads as a glitch rather than a transition.
+   */
+  --word-fade: 600ms;
+
+  /*
+   * The per-letter stagger inside that word.
+   *
+   * `--char-step` is the gap between one letter starting and the next, so the
+   * change travels across the word as a wave instead of arriving as a block.
+   * Small on purpose: at 30ms an eight-letter word is fully underway inside a
+   * fifth of a second, which reads as one gesture. Push it past about 60 and
+   * the letters stop belonging to the same word.
+   */
+  --char-fade: 440ms;
+  --char-step: 30ms;
+
+  /*
+   * A spring, solved and sampled.
+   *
+   * Stiffness 300, damping 30, mass 1 — a damping ratio of 0.866, which is
+   * underdamped by exactly enough to overshoot 0.43% and settle back. That
+   * overshoot is the entire difference between "eased" and "physical": a
+   * bezier can decelerate but it can never arrive slightly past where it was
+   * going and come back, and that tiny correction is what the eye reads as
+   * weight.
+   *
+   * `linear()` is how a curve that is not a cubic bezier gets into CSS: 33
+   * samples off the analytic solution, which the browser interpolates between.
+   * Used for the gallery's play/pause/replay swap, where one glyph has to hand
+   * over to another as though it had mass.
+   */
+  --ease-spring: linear(
+    0, 0.0258, 0.0896, 0.1753, 0.2712, 0.3692, 0.4639, 0.5518, 0.631, 0.7008,
+    0.7609, 0.8119, 0.8543, 0.8892, 0.9174, 0.9399, 0.9575, 0.9711, 0.9815,
+    0.9891, 0.9947, 0.9986, 1.0012, 1.0028, 1.0038, 1.0042, 1.0043, 1.0042,
+    1.0039, 1.0035, 1.0031, 1.0026, 1.0022
+  );
+
+  /* How long each highlight holds before the gallery moves on. */
+  --gallery-dwell: 5200ms;
+}
+
+html {
+  background-color: var(--paper);
+}
+
+/*
+ * A section can repaint the page under everything. `useSectionTone` sets the
+ * attribute; the transition is here, on both boxes, because `html` is what
+ * shows in the overscroll area and `body` is what everything else sits on.
+ */
+html,
+body {
+  transition: background-color 700ms var(--ease-standard);
+}
+
+html[data-tone='stories'],
+html[data-tone='stories'] body {
+  background-color: var(--paper-toned);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body {
+    transition: none;
+  }
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-google-sans);
+  -webkit-font-smoothing: antialiased;
+
+  /*
+   * Nothing drag-selects by default.
+   *
+   * This is an application, not a document: the blue smear you get from
+   * dragging across a nav item or double-clicking a button label is never
+   * something anybody wanted, and it is especially loud on a bar whose whole
+   * job is to look like glass.
+   *
+   * Put `select-text` on anything that is genuinely prose — an article body, a
+   * code block, an API key somebody has to copy. The exceptions below are the
+   * ones that are never a judgement call.
+   */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/*
+ * No focus rings anywhere.
+ *
+ * Asked for explicitly. Worth knowing what it costs: `:focus-visible` only
+ * ever fires for keyboard and assistive navigation — a mouse click never
+ * triggers it — so this removes the one cue a keyboard user has for where they
+ * are on the page, and leaves tabbing through the header effectively blind.
+ * Deleting the rule restores it; a quieter ring, of the kind the rest of this
+ * design would use, is a one-line alternative.
+ */
+:focus,
+:focus-visible {
+  outline: none;
+}
+
+/*
+ * The body's `user-select: none` does not reach a modal dialog.
+ *
+ * An element promoted to the top layer is still a descendant of `<body>` in the
+ * DOM, so inheritance ought to carry — but Chrome resolves `user-select` for
+ * top-layer content against the viewport rather than the document tree, and the
+ * dialog comes back `text` while everything around it is `none`. So it is said
+ * again here. The rule below re-exempts the fields, as it does everywhere else.
+ */
+dialog {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/*
+ * Fields stay selectable, always. A text input you cannot select inside is a
+ * text input you cannot correct, and `user-select: none` on an ancestor is
+ * inherited — so this has to be said, not assumed.
+ */
+input,
+textarea,
+select,
+[contenteditable]:not([contenteditable='false']) {
+  -webkit-user-select: text;
+  user-select: text;
+}

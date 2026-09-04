@@ -1,0 +1,114 @@
+@font-face {
+  font-family: 'Google Sans';
+  src: url('/fonts/google-sans/google-sans-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Google Sans';
+  src: url('/fonts/google-sans/google-sans-medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Google Sans';
+  src: url('/fonts/google-sans/google-sans-semi-bold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  src: url('/fonts/noto-sans-arabic/noto-sans-arabic-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  src: url('/fonts/noto-sans-arabic/noto-sans-arabic-medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  src: url('/fonts/noto-sans-arabic/noto-sans-arabic-semi-bold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+ * Material Symbols come from Google Fonts — see the `<link>` in `index.html`,
+ * which names every icon the site uses so the file is cut to those and no
+ * more. The variable `FILL` axis is the reason this is a font and not a set
+ * of SVGs: filling an icon under the pointer is a swap between two paths
+ * everywhere else; here it is one axis moving from 0 to 1, which CSS can
+ * interpolate — so a glyph thickens into its filled self instead of cutting.
+ */
+.material-symbol {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  /*
+   * Centres the glyph in the box the component sizes. Material Symbols have a
+   * 1em advance, so width, height and font-size agreeing is enough to make the
+   * icon square — but the glyph's own baseline is not the box's middle, and
+   * without this the moon sits low next to the text beside it.
+   */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variation-settings:
+    'FILL' var(--symbol-fill, 0),
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  /*
+   * Every property this element animates has to be named here, not on the call
+   * site. `fonts.css` is imported after Tailwind, so a `transition` set on
+   * `.material-symbol` outranks any `transition-*` utility put on the same
+   * element — a caret given `transition-transform` alongside this class had
+   * its transition silently dropped and snapped through its rotation.
+   *
+   * `rotate` and `scale` are listed separately from `transform`, and they are
+   * the ones that do the work: Tailwind v4 compiles `rotate-180` and
+   * `scale-110` to those standalone properties rather than to `transform`
+   * functions, so a transition naming only `transform` never touches them.
+   *
+   * `--ease-standard` and not `--ease-out`. The latter is an expo curve that
+   * spends 68% of its range in the first fifth of its duration — right for
+   * something crossing the screen, wrong for everything here. A fill, a colour
+   * and a 180-degree turn are all small enough that front-loading them like
+   * that is indistinguishable from no transition at all.
+   *
+   * The colour timing has to match whatever wraps the icon, or a glyph beside
+   * a label finishes its fade first and the pair reads as two separate moves.
+   * `--hover-fade` is that shared value; `components/Header` uses it too.
+   *
+   * `rotate` takes `--menu-glide` instead, because the only thing in here that
+   * rotates is the caret over "SYNC AI" and what it is describing is the panel
+   * underneath it. The caret is a hinge on that panel; a hinge that finishes
+   * turning before the door has opened is two animations, not one.
+   */
+  transition:
+    font-variation-settings var(--hover-fade) var(--ease-standard),
+    color var(--hover-fade) var(--ease-standard),
+    scale var(--hover-fade) var(--ease-standard),
+    rotate var(--menu-glide) var(--ease-glide),
+    transform var(--menu-glide) var(--ease-glide);
+}

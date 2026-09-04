@@ -1,0 +1,192 @@
+/*
+ * Liquid glass
+ * ---------------------------------------------------------------------------
+ *
+ * The header's material. `components/GlassBar` carries the reasoning for why
+ * all of it has to land on one element, along with the SVG filter that does
+ * the graded blur and the refraction at the rim. This file is the rest of it:
+ * the wash that keeps the bar legible, the specular hairline along the top
+ * face, and the bare state at the top of a page.
+ *
+ * Nothing here transitions except the bare state, and that is deliberate:
+ * every frame of an animation on this element repaints a 72px-tall pane whose
+ * backdrop-filter then has to run again.
+ */
+
+.glass {
+  position: relative;
+  /*
+   * Thin enough to let the page's own colour through. The bar's contrast comes
+   * from the text, not from the wash — a wash heavy enough to guarantee it
+   * would make the bar a lid on the page instead of a pane over it.
+   */
+  --glass-wash: 58%;
+  /*
+   * Thinner once the menu is open. The panel draws its own opaque sheet for
+   * everything that has to be read, so the glass around it only has the bar
+   * to carry — and the field behind the hero, which comes up to meet an open
+   * menu, is worth seeing through it.
+   */
+  --glass-wash-open: 44%;
+}
+
+.dark .glass {
+  --glass-wash: 64%;
+  --glass-wash-open: 48%;
+}
+
+.glass-content {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+ * The pane: one surface, covering the whole bar.
+ *
+ * Everything else is on this one element too, in the only order CSS allows:
+ * `backdrop-filter` runs on what is behind, the backgrounds paint over that,
+ * and the box-shadow sits above both.
+ */
+.glass-pane {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  /*
+   * The wash, and the saturation lift. Glass concentrates colour; gauze mutes
+   * it, and a blur on its own is gauze. The gradient thins toward the rim so
+   * the refraction has something left to show through.
+   *
+   * The white gradient is the sheen along the top face — the sky a horizontal
+   * pane reflects. Only the top: the rim is left bare.
+   */
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.12) 0, rgb(255 255 255 / 0) 28px),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--paper) var(--glass-wash), transparent) 0%,
+      color-mix(in srgb, var(--paper) calc(var(--glass-wash) - 8%), transparent) 64%,
+      color-mix(in srgb, var(--paper) calc(var(--glass-wash) - 26%), transparent) 100%
+    );
+
+  /*
+   * The light along the top face of the slab, and the only edge the bar draws.
+   * Its bottom carries nothing at all — no line, no glow, no cast: a bar that
+   * blurs what passes behind it has already said where it ends.
+   */
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6);
+
+  -webkit-backdrop-filter: blur(16px) saturate(1.7) brightness(1.04);
+  backdrop-filter: blur(16px) saturate(1.7) brightness(1.04);
+
+  /*
+   * `background` is in the transition list because the expanded state below
+   * changes it, and the two values are written to interpolate: same two
+   * layers, same gradient function, same stop count, only the colours differ.
+   * Swap either one for a flat `color-mix()` and the property becomes discrete
+   * — the wash would jump the moment the panel opened, which is exactly the
+   * pop the height animation exists to avoid.
+   */
+  transition:
+    opacity 400ms var(--ease-standard),
+    background var(--menu-glide) var(--ease-glide);
+}
+
+/*
+ * At the very top of a screen there is no pane at all.
+ *
+ * Glass is for something passing behind it, and at rest nothing is. A wash and
+ * a blur over nothing is a band drawn across the top of the page for its own
+ * sake. So the bar earns its material on the first scroll, when there is
+ * finally something under it, and gives it back at the top.
+ */
+.glass[data-bare] .glass-pane {
+  opacity: 0;
+}
+
+/*
+ * With the panel open the surface is no longer one row tall, so it stops
+ * thinning towards a rim that is now somewhere in its middle and sits flat all
+ * the way down. The rule further down stands the refraction down for the same
+ * reason and on the same selector.
+ *
+ * This one beats `[data-bare]` on purpose: a panel dropped open at the top of
+ * the page still needs a surface to be drawn on, and there is now content of
+ * its own behind it even if the page has not moved.
+ */
+.glass[data-expanded] .glass-pane {
+  opacity: 1;
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.12) 0, rgb(255 255 255 / 0) 28px),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--paper) var(--glass-wash-open), transparent) 0%,
+      color-mix(in srgb, var(--paper) var(--glass-wash-open), transparent) 64%,
+      color-mix(in srgb, var(--paper) var(--glass-wash-open), transparent) 100%
+    );
+}
+
+.dark .glass-pane {
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 0, rgb(255 255 255 / 0) 30px),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--paper) var(--glass-wash), transparent) 0%,
+      color-mix(in srgb, var(--paper) calc(var(--glass-wash) - 8%), transparent) 64%,
+      color-mix(in srgb, var(--paper) calc(var(--glass-wash) - 26%), transparent) 100%
+    );
+
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.15);
+
+  -webkit-backdrop-filter: blur(16px) saturate(1.6) brightness(0.92);
+  backdrop-filter: blur(16px) saturate(1.6) brightness(0.92);
+}
+
+.dark .glass[data-expanded] .glass-pane {
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 0, rgb(255 255 255 / 0) 30px),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--paper) var(--glass-wash-open), transparent) 0%,
+      color-mix(in srgb, var(--paper) var(--glass-wash-open), transparent) 64%,
+      color-mix(in srgb, var(--paper) var(--glass-wash-open), transparent) 100%
+    );
+}
+
+/*
+ * The real thing, where it can be had.
+ *
+ * Chromium is the only engine that will take an SVG filter in
+ * `backdrop-filter`, and `paint()` is the cheapest question to ask that is true
+ * there and false in WebKit and Gecko. Where the answer is no, the flat 16px
+ * blur above stands on its own — a good frosted bar, just without the grade in
+ * the blur or the bend at the rim.
+ */
+@supports (background: paint(sync)) {
+  .glass-pane {
+    -webkit-backdrop-filter: url('#sync-glass') saturate(1.7) brightness(1.04);
+    backdrop-filter: url('#sync-glass') saturate(1.7) brightness(1.04);
+  }
+
+  .dark .glass-pane {
+    -webkit-backdrop-filter: url('#sync-glass') saturate(1.6) brightness(0.92);
+    backdrop-filter: url('#sync-glass') saturate(1.6) brightness(0.92);
+  }
+
+  /*
+   * With the panel open there is an opaque surface directly under the row, and
+   * the rim would be drawing up page content that the panel is covering — a
+   * bright seam of something you cannot see anywhere else. So the refraction
+   * stands down and the flat blur takes over until it closes.
+   */
+  .glass[data-expanded] .glass-pane {
+    -webkit-backdrop-filter: blur(16px) saturate(1.7) brightness(1.04);
+    backdrop-filter: blur(16px) saturate(1.7) brightness(1.04);
+  }
+
+  .dark .glass[data-expanded] .glass-pane {
+    -webkit-backdrop-filter: blur(16px) saturate(1.6) brightness(0.92);
+    backdrop-filter: blur(16px) saturate(1.6) brightness(0.92);
+  }
+}

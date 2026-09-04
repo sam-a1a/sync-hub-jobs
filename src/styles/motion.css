@@ -1,0 +1,2091 @@
+/*
+ * Motion
+ * ---------------------------------------------------------------------------
+ *
+ * Two things move the whole document — a route change and the theme toggle —
+ * and each wants its own choreography. Rather than have the stylesheet work
+ * out which is which, whoever starts a transition stamps `data-vt` on the root
+ * first; see `lib/transition.ts`.
+ */
+
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 380ms;
+  animation-timing-function: var(--ease-out);
+}
+
+/*
+ * The theme. A straight crossfade with no movement, because nothing has moved
+ * — only the colours have — and sliding a page that is standing still is a lie
+ * about what happened.
+ *
+ * Nothing in the bar is named: a `view-transition-name` drops the element's
+ * `backdrop-filter` for the length of the transition, so naming the glass in
+ * order to hold it still is also what makes it go flat and come back, which is
+ * the flash. Both halves are complementary and the same length, and the UA
+ * blends them with `plus-lighter`, so the two opacities sum to one and nothing
+ * dips to grey in the middle.
+ *
+ * `--ease-standard`, and not the expo curve this file uses for things that
+ * travel. A crossfade has no distance and no destination — there is nothing
+ * for a decelerating curve to arrive at, and front-loading it just means the
+ * new palette is essentially in place while the animation still has two-thirds
+ * of its time left to run. An even ramp is the whole of what makes a
+ * cross-dissolve read as smooth.
+ */
+html[data-vt='theme']::view-transition-old(root) {
+  animation: vt-fade-out 420ms var(--ease-standard) both;
+}
+
+html[data-vt='theme']::view-transition-new(root) {
+  animation: vt-fade-in 460ms 60ms var(--ease-standard) both;
+}
+
+html[data-vt='route']::view-transition-old(root) {
+  animation: vt-fade-out 220ms var(--ease-out) both;
+}
+
+html[data-vt='route']::view-transition-new(root) {
+  animation: vt-fade-in 220ms var(--ease-out) both;
+}
+
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
+ * The mega panel under the row.
+ * ---------------------------------------------------------------------------
+ *
+ * Two things move, and the *first* one is the point: the bar itself grows.
+ *
+ * The obvious build — mount the panel and fade it in — is what made this feel
+ * broken. The glass pane is `inset: 0` of a container that gains the panel's
+ * full height the instant it mounts, so a big opaque rectangle snapped into
+ * existence and only then did its contents animate. Whatever the contents do
+ * after that, the eye has already seen the jump.
+ *
+ * So the height is what is animated, and the panel rides along inside it.
+ * `grid-template-rows: 0fr -> 1fr` is how, because `height: auto` is not
+ * interpolable and the panel's height is not known up front. The child clips
+ * itself, so the panel is revealed by the bar unrolling over it rather than by
+ * being squashed.
+ *
+ * Transitions rather than `@keyframes`, throughout. A transition interrupted
+ * halfway reverses from where it actually is; a keyframe animation restarts
+ * from its own beginning, so a pointer that leaves and comes back mid-open
+ * gets a jump. Hover menus get interrupted constantly.
+ *
+ * Opening and closing are the same move at the same speed, which is why each
+ * property is declared exactly once and the open state only changes its
+ * *value*. Asymmetric timing is a real technique, but it belongs to things
+ * that get dismissed; this gets *un-hovered*, and a menu that leaves faster
+ * than it arrived feels like it was dropped rather than closed.
+ *
+ * The height runs on `--menu-glide` and `--ease-glide`, which are Lenis' own
+ * scroll easing expressed as a bezier — see the note in `index.css`.
+ *
+ * The *fade* does not, and this is the one place the two deliberately part
+ * company. `--ease-glide` is an expo curve: on a 620ms move it is 67% done at
+ * 100ms. That is right for the bar, which has a long visible tail as it settles
+ * — but applied to opacity it means the panel's contents are two-thirds gone
+ * before the bar has meaningfully moved. Opening hides that, because there is
+ * a panel arriving to watch; closing does not, and what is left is an empty bar
+ * rolling up. Which is exactly why the close read as faster than the open
+ * despite both being this same pair of declarations.
+ *
+ * So the fade takes `--ease-standard`, which ramps evenly and keeps the content
+ * legible for as long as the bar is still moving. Both directions still run the
+ * identical duration and curve as each other; that was never the asymmetry.
+ */
+.menu-shell {
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--menu-glide) var(--ease-glide);
+}
+
+.menu-shell[data-open] {
+  grid-template-rows: 1fr;
+}
+
+/*
+ * The clip. A grid item's default `min-height: auto` would refuse to go below
+ * its content height and the row would never close, so `overflow: hidden`
+ * — which forces `min-height: 0` — is load-bearing, not cosmetic.
+ *
+ * It is also why the panel inside carries top padding: this clips at the
+ * shell's own edge, and a ring drawn *outside* the panel's border box has
+ * nowhere to land without a gap to land in.
+ */
+.menu-shell > * {
+  overflow: hidden;
+}
+
+.menu-panel {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity var(--menu-glide) var(--ease-standard),
+    transform var(--menu-glide) var(--ease-standard);
+}
+
+.menu-shell[data-open] .menu-panel {
+  opacity: 1;
+  transform: none;
+}
+
+/*
+ * The menu button
+ * ---------------------------------------------------------------------------
+ *
+ * Three bars becoming an X. `components/MenuIcon` has the geometry; this is
+ * the choreography, and the choreography is the point — the two halves of the
+ * move are staggered, and they stagger in opposite orders depending on which
+ * way it is going.
+ *
+ * Opening, the outer bars close ranks and only then swing into the cross.
+ * Closing, they swing back to level first and only then spread. Each direction
+ * therefore reads as one movement with a beat in it rather than two things
+ * happening on top of each other, and the middle bar gets out of the way early
+ * on the way in and comes back late on the way out.
+ *
+ * The two orders are expressed as two sets of `transition-delay`s: a transition
+ * uses the delays declared on the state it is heading *towards*, so the closed
+ * rule below is the one that runs while closing.
+ */
+.menu-icon-bar {
+  transform-box: fill-box;
+  transform-origin: center;
+
+  translate: 0 0;
+  rotate: 0deg;
+  scale: 1 1;
+  opacity: 1;
+
+  /* Closing: swing level, then spread. */
+  transition:
+    rotate 200ms var(--ease-out) 0ms,
+    translate 200ms var(--ease-out) 90ms,
+    scale 200ms var(--ease-out) 90ms,
+    opacity 140ms linear 130ms;
+}
+
+/* Opening: close ranks, then swing. */
+.menu-icon[data-open] .menu-icon-bar {
+  transition:
+    translate 200ms var(--ease-out) 0ms,
+    rotate 200ms var(--ease-out) 90ms,
+    scale 200ms var(--ease-out) 0ms,
+    opacity 120ms linear 0ms;
+}
+
+.menu-icon[data-open] .menu-icon-top {
+  translate: 0 64px;
+  rotate: 45deg;
+}
+
+.menu-icon[data-open] .menu-icon-bottom {
+  translate: 0 -64px;
+  rotate: -45deg;
+}
+
+/*
+ * The middle bar retracts into itself rather than simply fading. A fade alone
+ * leaves a ghost across the middle of the cross for as long as it lasts.
+ */
+.menu-icon[data-open] .menu-icon-middle {
+  scale: 0 1;
+  opacity: 0;
+}
+
+/*
+ * The headline's rotating word
+ * ---------------------------------------------------------------------------
+ *
+ * The word crosses over, the pill's width follows it, and the tint changes
+ * colour — one duration for all three, so the headline reads as one object
+ * changing its mind rather than three effects going off together.
+ *
+ * The colours are plain `background-color` declarations keyed off a data
+ * attribute, and not custom properties. A custom property that has not been
+ * registered with `@property` is a *discrete* value: swapping it repaints
+ * instantly and no transition on the element can smooth it. Painting the real
+ * property per tone means the browser interpolates between two colours the
+ * ordinary way, everywhere, with nothing to register.
+ */
+.hero-pill {
+  transition: background-color var(--word-fade) var(--ease-standard);
+}
+
+.hero-words {
+  /*
+   * The width comes from JavaScript because `auto` cannot be interpolated —
+   * `components/RotatingWord` measures each word in the real font. This is the
+   * half that makes the measuring worth doing.
+   */
+  transition: width var(--word-fade) var(--ease-standard);
+}
+
+/*
+ * Every word sits in the same box, and the box itself never moves — the
+ * letters do, one at a time.
+ *
+ * Animating the word as a single block is the obvious version and it reads as
+ * a slide: one object leaves, another arrives, and the fact that they are made
+ * of letters is incidental. Staggering by character makes the change travel
+ * across the word, so "Discover" turns into "Match" the way a split-flap board
+ * turns over — which is the same information delivered as a transformation
+ * rather than a replacement.
+ *
+ * At rest the letters wait *below* the line and leave *above* it, so the swap
+ * has a direction. Both halves run on the same clock and neither is the
+ * other's delay: letter three of the old word is going up exactly as letter
+ * three of the new one is coming up to meet it, which is what keeps the pill
+ * from ever looking half empty.
+ */
+.hero-word {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/*
+ * `--i` is the letter's place in the word, set inline. Multiplying it by
+ * `--char-step` is what turns one declaration into a wave, and it is why the
+ * delay is computed here rather than written per letter: the stagger is a
+ * property of the effect, not of any particular word.
+ */
+.hero-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.45em);
+  transition:
+    opacity var(--char-fade) var(--ease-standard) calc(var(--i) * var(--char-step)),
+    transform var(--char-fade) var(--ease-standard) calc(var(--i) * var(--char-step));
+}
+
+.hero-word[data-state='active'] .hero-char {
+  opacity: 1;
+  transform: none;
+}
+
+.hero-word[data-state='leaving'] .hero-char {
+  opacity: 0;
+  transform: translateY(-0.45em);
+}
+
+.hero-pill[data-tone='discover'] {
+  background-color: #e0f4f2;
+}
+
+.hero-pill[data-tone='match'] {
+  background-color: #e6f5ee;
+}
+
+.hero-pill[data-tone='apply'] {
+  background-color: #e4eff7;
+}
+
+.hero-pill[data-tone='land'] {
+  background-color: #fdeade;
+}
+
+.hero-pill[data-tone='rise'] {
+  background-color: #e7eef0;
+}
+
+.hero-pill[data-tone='grow'] {
+  background-color: #fdf3e2;
+}
+
+.dark .hero-pill[data-tone='discover'] {
+  background-color: #0b2b28;
+}
+
+.dark .hero-pill[data-tone='match'] {
+  background-color: #0d2b22;
+}
+
+.dark .hero-pill[data-tone='apply'] {
+  background-color: #12293a;
+}
+
+.dark .hero-pill[data-tone='land'] {
+  background-color: #2b1a14;
+}
+
+.dark .hero-pill[data-tone='rise'] {
+  background-color: #14262b;
+}
+
+.dark .hero-pill[data-tone='grow'] {
+  background-color: #2e2415;
+}
+
+/*
+ * The highlights gallery
+ * ---------------------------------------------------------------------------
+ */
+
+/*
+ * The track is flush. No padding, no gutter, nothing insetting the cards from
+ * the section's edges — the row slides edge to edge and a card sitting at the
+ * start sits at the start.
+ *
+ * Which is why the cards snap to `start` and not to `center`. Centre-snapping
+ * is what *forces* the gutter: a card can only reach the middle if there is
+ * half a viewport of scrollable space beyond it, so the first and last cards
+ * need padding invented on their outer side or they can never satisfy their own
+ * snap point. Aligning to the start asks for none of that.
+ */
+.gallery {
+  /*
+   * Apple's proportions, measured off the reference: the card is ~73% of the
+   * viewport and the margins either side of it are equal — which is another
+   * way of saying the card is centred, and the inset at the *start* of the row
+   * is simply what is left over, halved.
+   */
+  --card-w: min(1180px, 73vw);
+
+  /*
+   * The section is full-bleed and the *text* is inset, not the other way round.
+   *
+   * Capping the section at a width and letting everything sit inside it is the
+   * obvious build, and it is what put a margin either side of the sliding row
+   * on a wide screen: the cards were flush to the container, but the container
+   * was not flush to anything. So the section spans the viewport, the track
+   * gets nothing at all, and this edge — a centring offset that collapses to a
+   * plain 24px gutter once the screen is narrower than the cap — is applied to
+   * the heading and the controls alone.
+   */
+  --card-pad: 2rem;
+  /*
+   * The inset at the start of the row, and the margin the heading and the
+   * controls share — so the first card sits exactly under the heading's first
+   * letter. It is a plain gutter now rather than half the leftover space: the
+   * centred version put the row nearly 200px in on a laptop, which is a lot of
+   * empty page before anything starts.
+   *
+   * The card is therefore not centred in the viewport, and should not be: it
+   * begins at the text and runs off to the right, which is what leaves the
+   * next card showing.
+   */
+  --gallery-edge: var(--card-pad);
+
+  /*
+   * Grid areas, so the controls can sit beside the heading on a wide screen and
+   * below the cards on a narrow one without being written twice.
+   *
+   * Rendering them in both places is the obvious alternative and it breaks the
+   * gallery: the progress bar *is* the clock, so a second copy is a second
+   * clock, and both would fire `animationend` and advance the card — two at a
+   * time, and only while both were mounted. One instance, placed twice.
+   */
+  display: grid;
+  grid-template-areas:
+    'head'
+    'track'
+    'controls';
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 40px;
+}
+
+.gallery-head {
+  grid-area: head;
+  padding-inline: var(--gallery-edge);
+}
+
+.gallery-controls {
+  grid-area: controls;
+}
+
+@media (width >= 40rem) {
+  .gallery {
+    --card-pad: 3rem;
+  }
+}
+
+@media (width >= 64rem) {
+  .gallery {
+    grid-template-areas:
+      'head controls'
+      'track track';
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  /* Beside the heading now, so it answers to the same edge. */
+  .gallery-controls {
+    padding-inline-end: var(--gallery-edge);
+  }
+}
+
+/*
+ * The inset is scrolled, not a container.
+ *
+ * Two things that sound contradictory have to be true at once, and padding on
+ * a scroll container is what makes them both true:
+ *
+ *   - at rest a card is inset from the screen. `padding-inline` puts the first
+ *     card level with the heading and leaves the same gap after the last one,
+ *     so nothing ever sits hard against the glass;
+ *   - while sliding there is nothing holding them. That padding is *content*
+ *     that scrolls away with everything else — it is not a box, not a
+ *     max-width, and not a clip. The moment the row moves, cards travel right
+ *     out through the screen edges and off it.
+ *
+ * `scroll-padding-inline` is what makes the first point survive the second.
+ * Snap points are measured from the container's edge unless told otherwise, so
+ * without it every card after the first would stop flush against the glass
+ * while the first one sat inset — the alignment would appear to break as soon
+ * as you scrolled. It moves the snap line in to meet the padding, so every card
+ * comes to rest exactly where the first one starts, and the bleed happens
+ * between those stops, which is the only place it should.
+ *
+ * The track itself has no width of its own: it spans the viewport. That is the
+ * "no container" half, and it is why the section is full-bleed and the heading
+ * carries the only real margin in here.
+ */
+.gallery-track {
+  grid-area: track;
+  gap: 16px;
+  padding-inline-start: var(--gallery-edge);
+  /*
+   * The same gutter at both ends. The last card therefore cannot reach the snap
+   * line — the scroll runs out first — and that is fine: it is a layout, not a
+   * lie, and padding a card's width onto the end to satisfy the arithmetic left
+   * a hole you could park in. The indicator is what has to cope, and it does,
+   * in `HighlightGallery`.
+   */
+  padding-inline-end: var(--gallery-edge);
+  scroll-padding-inline: var(--gallery-edge);
+  scrollbar-width: none;
+  /* The scroll is the control; a bar under it is a second one that lies. */
+  -ms-overflow-style: none;
+}
+
+.gallery-track::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-card {
+  flex: 0 0 var(--card-w);
+  /*
+   * Shallower than the 16/10 this started at. The width is fixed by the
+   * reference's proportions, so height is the only dimension left to spend —
+   * and at 16/10 a card was over 650px tall on a laptop, which is most of the
+   * viewport for one slide in a row of four.
+   */
+  aspect-ratio: 2 / 1;
+}
+
+/*
+ * The position indicator.
+ *
+ * Every dot's width is a continuous function of how far the row has scrolled,
+ * not a transition fired when the active one changes. That distinction is the
+ * whole of it. A `transition: width` on a `[data-active]` swap means the
+ * outgoing pill and the incoming one animate on their own clocks, starting
+ * whenever React happens to commit — so they overlap, or gap, or fight a scroll
+ * that is still moving, and the result reads as two separate animations going
+ * off near each other.
+ *
+ * Driving it from the scroll position instead means there is only one number.
+ * `--gallery-progress` is the fractional card index, written by the scroll
+ * handler; each dot knows its own `--item-index`; the distance between them is
+ * how expanded that dot is. Drag the row halfway and both dots are genuinely
+ * half expanded, because they are two readings of the same value. Nothing has
+ * to be kept in sync because nothing is separate.
+ *
+ * `max(x, -1 * x)` is absolute value — CSS has no `abs()` in stable browsers —
+ * and `clamp(0, 1 - that, 1)` turns the distance into an expansion that is 1 on
+ * the current dot and 0 for anything a full card away.
+ */
+.gallery-dots {
+  --dot-size: 8px;
+  --dot-active-width: 48px;
+  --dot-off: rgb(7 71 66 / 0.36);
+  --dot-on: rgb(7 71 66 / 0.85);
+}
+
+.dark .gallery-dots {
+  --dot-off: rgb(255 255 255 / 0.36);
+  --dot-on: rgb(255 255 255 / 0.85);
+}
+
+.gallery-dot {
+  --item-distance: max(
+    calc(var(--item-index) - var(--gallery-progress)),
+    calc((var(--gallery-progress) - var(--item-index)))
+  );
+  --expand: clamp(0, calc(1 - var(--item-distance)), 1);
+
+  position: relative;
+  height: var(--dot-size);
+  width: calc(
+    var(--dot-size) + (var(--dot-active-width) - var(--dot-size)) * var(--expand)
+  );
+  flex: none;
+  border-radius: 10px;
+
+  /*
+   * The colour rides the same number, so a dot half way to being current is
+   * half way to being lit. A `transition` here would be the very thing this
+   * whole approach exists to avoid.
+   */
+  background-color: color-mix(
+    in srgb,
+    var(--dot-on) calc(var(--expand) * 100%),
+    var(--dot-off)
+  );
+}
+
+.gallery-clock {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gallery-dot[data-active] .gallery-clock {
+  animation: gallery-tick var(--gallery-dwell) linear both;
+}
+
+.gallery[data-status='paused'] .gallery-clock {
+  animation-play-state: paused;
+}
+
+@keyframes gallery-tick {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/*
+ * Play, pause and replay, stacked and crossfading on a spring.
+ *
+ * The outgoing glyph shrinks below its size as it leaves and the incoming one
+ * arrives from above its own, so the two pass through each other rather than
+ * dissolving in place. `--ease-spring` overshoots by half a percent on the way
+ * in, which is the whole reason the swap reads as an object with weight rather
+ * than as two opacities being traded.
+ */
+.gallery-icons {
+  position: relative;
+}
+
+.gallery-icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  scale: 0.6;
+  transition:
+    opacity 220ms var(--ease-standard),
+    scale 450ms var(--ease-spring);
+}
+
+.gallery-icon[data-shown] {
+  opacity: 1;
+  scale: 1;
+}
+
+/*
+ * The logo wall's walk
+ * ---------------------------------------------------------------------------
+ *
+ * The row moves at a constant speed and joins back onto itself. Three things
+ * make that seamless rather than a loop you can see:
+ *
+ * The shift. The track holds three identical copies, and one cycle moves it by
+ * exactly one copy plus one gap — at which point copy two is standing precisely
+ * where copy one was and the restart is invisible. `-33.3%` is *not* that
+ * number: the track is `3W + 2g` wide, so a third of it is `W + 2g/3`, and the
+ * missing `g/3` would drift the row a few pixels every lap until the seam
+ * showed. `calc((-100% - gap) / 3)` is the exact figure.
+ *
+ * Four copies, not two or three. After the shift the remaining copies still
+ * have to cover the screen, and one copy of these six marks measures 918px:
+ * three copies leave 1916px behind, which is four pixels short of a 1920 screen
+ * and shows the seam as a hairline of empty page. Four covers 2914px. The
+ * divisor in the keyframe is the copy count and has to move with it.
+ *
+ * The fade. A `mask-image` rather than gradient panels laid over the ends: the
+ * page behind this is `--paper` in one theme and near-black in the other, so
+ * any painted fade would need two of everything and would still be wrong over
+ * anything but a flat background. A mask takes the pixels out instead, and the
+ * marks dissolve into whatever is actually behind them.
+ */
+.marquee {
+  --marquee-gap: 5rem;
+  --marquee-duration: 44s;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: var(--marquee-gap);
+  animation: marquee-walk var(--marquee-duration) linear infinite;
+}
+
+/*
+ * Stopping under the pointer is not a flourish. The marks colour on hover and
+ * some of them will be links; asking somebody to hit a moving target is the
+ * kind of thing that makes a row like this feel hostile.
+ */
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+.marquee-row {
+  display: flex;
+  align-items: center;
+  gap: var(--marquee-gap);
+  flex: none;
+}
+
+@keyframes marquee-walk {
+  to {
+    transform: translateX(calc((-100% - var(--marquee-gap)) / 4));
+  }
+}
+
+/*
+ * The hero's drift
+ * ---------------------------------------------------------------------------
+ *
+ * The headline leaves a little faster than the page does. `--hero` is the
+ * scroll position over the hero's own height, so the effect is spent by the
+ * time the section is gone and never runs on content it does not own.
+ *
+ * Small on purpose — 18vh over a whole viewport of scrolling. Parallax on a
+ * headline is a depth cue, and past a certain distance it stops reading as
+ * depth and starts reading as the text being dragged.
+ *
+ * Opacity goes with it. Type sliding *under* the glass bar at full strength
+ * fights the bar for attention at exactly the moment the bar is earning its
+ * material.
+ */
+.hero-drift {
+  transform: translateY(calc(var(--hero, 0) * -18vh));
+  opacity: calc(1 - clamp(0, calc(var(--hero, 0) / 0.85), 1) * 0.85);
+  will-change: transform, opacity;
+}
+
+/*
+ * A row that scrolls on a phone and a grid on anything wider.
+ *
+ * Three portrait cards stacked vertically is most of a phone screen each and
+ * the better part of a metre of scrolling to see all three — so on a narrow
+ * screen they lie down and become a row you push sideways instead.
+ *
+ * Same construction as the highlights gallery: the leading gutter is padding on
+ * the scroll container, so it moves with the content and the cards run out past
+ * it to the screen edges rather than being held in a column. `scroll-padding`
+ * puts the snap line on that same gutter, so every card comes to rest exactly
+ * where the first one starts.
+ */
+.stories-row {
+  display: flex;
+  gap: 16px;
+  padding-inline: 1.5rem;
+  scroll-padding-inline: 1.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.stories-row::-webkit-scrollbar {
+  display: none;
+}
+
+.stories-row > * {
+  /*
+   * Not 100%: a sliver of the next card is what says the row scrolls at all.
+   * A card that exactly fills the screen looks like the only card there is.
+   */
+  flex: 0 0 78%;
+  scroll-snap-align: start;
+}
+
+@media (width >= 40rem) {
+  .stories-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin-inline: auto;
+    max-width: 72rem;
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+
+  .stories-row > * {
+    flex: initial;
+  }
+}
+
+@media (width >= 64rem) {
+  .stories-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/*
+ * The stories wall
+ * ---------------------------------------------------------------------------
+ *
+ * A duotone card: one hue through the photograph, the mark and the quote, so
+ * three portraits shot in three different rooms read as one set.
+ *
+ * The colour is a blend, not a tint. `mix-blend-mode: color` takes the hue and
+ * saturation from the overlay and the *lightness* from the photograph beneath,
+ * which is the definition of a duotone — a flat colour at 60% opacity would
+ * instead mute the face towards grey and flatten every highlight in it. The
+ * gradient underneath is what shows when there is no photograph yet, and what
+ * gives the blend something to work on at the edges when there is.
+ */
+.story {
+  position: relative;
+  display: flex;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 20px;
+  isolation: isolate;
+}
+
+.story-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Stripped to greys first, so the wash is the only hue in the card. */
+  filter: grayscale(1) contrast(1.05);
+}
+
+.story-wash {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: color;
+  background: var(--story-wash);
+}
+
+/*
+ * Sits above the blend — `isolation: isolate` on the card keeps the blend from
+ * reaching the page behind it, and a positive z-index keeps the type out of it.
+ * White text run through a `color` blend would take the wash's hue and stop
+ * being white.
+ */
+.story-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 24px;
+  /*
+   * The quote sits at the bottom over the darkest part of the frame. A scrim
+   * rather than a flat overlay: it is transparent across the face and only
+   * gathers where the words are.
+   */
+  background: linear-gradient(to top, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.25) 42%, transparent 68%);
+}
+
+.story-tone-coral {
+  --story-wash: #c9432c;
+  background: linear-gradient(150deg, #e08a72, #4a1a10);
+}
+
+.story-tone-ocean {
+  --story-wash: #2f5fa8;
+  background: linear-gradient(150deg, #7ea3d8, #12203c);
+}
+
+.story-tone-amber {
+  --story-wash: #b8862a;
+  background: linear-gradient(150deg, #e2bb72, #3a2a0e);
+}
+
+/*
+ * The account menu, hanging off the greeting in the bar.
+ *
+ * Positioned rather than laid out — it floats over the page instead of growing
+ * the bar, because two rows are not worth pushing a document down by.
+ *
+ * `end-0` and not `start-0`: it hangs from the right edge of the button it
+ * belongs to, which is itself at the right edge of the bar. Anchored from the
+ * left it would run off the screen the moment the greeting got longer than the
+ * card, which "Hello, Alexandra!" already does.
+ */
+.account-menu {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  min-width: 10rem;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--hairline);
+  background-color: var(--paper);
+  box-shadow: 0 18px 40px -16px rgb(7 71 66 / 0.28);
+
+  opacity: 0;
+  scale: 0.96;
+  translate: 0 -4px;
+  pointer-events: none;
+  /*
+   * `transform-origin` at the corner it hangs from, so it opens *out of* the
+   * button rather than swelling from its own middle.
+   */
+  transform-origin: top right;
+  transition:
+    opacity 180ms var(--ease-standard),
+    scale 320ms var(--ease-spring),
+    translate 320ms var(--ease-spring);
+}
+
+.dark .account-menu {
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.7);
+}
+
+.account-menu[data-open] {
+  opacity: 1;
+  scale: 1;
+  translate: 0 0;
+  pointer-events: auto;
+}
+
+.account-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 9px;
+  text-align: start;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--hover-fade) var(--ease-standard),
+    color var(--hover-fade) var(--ease-standard);
+}
+
+.account-menu-item:hover {
+  background-color: var(--hover-wash);
+}
+
+.account-menu-quit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.account-menu-quit:hover {
+  background-color: transparent;
+  color: var(--color-brick);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-menu,
+  .account-menu-item {
+    transition: none;
+  }
+}
+
+/*
+ * The account modal
+ * ---------------------------------------------------------------------------
+ *
+ * The site's choreography, written as CSS instead of springs: the backdrop
+ * fades, the panel arrives from a little below and a little small, and both
+ * leave the way they came.
+ *
+ * Two modern properties carry the whole thing. `@starting-style` gives an
+ * element a set of values to animate *from* on its very first frame, which is
+ * the only way a transition can run on something that has just been added to
+ * the DOM. And `transition-behavior: allow-discrete` lets `display` and
+ * `overlay` be transitioned — without it the dialog is removed from the top
+ * layer the instant it closes and the exit animation plays on something that is
+ * no longer visible, which is to say it does not play at all.
+ *
+ * Where neither is supported the modal still opens and closes correctly, just
+ * without the movement.
+ */
+.account-dialog {
+  margin: auto;
+  max-width: min(28rem, calc(100vw - 2rem));
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+
+  opacity: 0;
+  scale: 0.96;
+  translate: 0 12px;
+  transition:
+    opacity 260ms var(--ease-standard),
+    scale 420ms var(--ease-spring),
+    translate 420ms var(--ease-spring),
+    display 420ms allow-discrete,
+    overlay 420ms allow-discrete;
+}
+
+.account-dialog[open] {
+  opacity: 1;
+  scale: 1;
+  translate: 0 0;
+}
+
+@starting-style {
+  .account-dialog[open] {
+    opacity: 0;
+    scale: 0.96;
+    translate: 0 12px;
+  }
+}
+
+/*
+ * The backdrop is a pseudo-element of the dialog, so it cannot be given a
+ * transform or a class — it gets its own transition, on the two things it can
+ * actually animate.
+ */
+.account-dialog::backdrop {
+  background-color: rgb(0 0 0 / 0);
+  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0px);
+  transition:
+    background-color 320ms var(--ease-standard),
+    backdrop-filter 320ms var(--ease-standard),
+    display 320ms allow-discrete,
+    overlay 320ms allow-discrete;
+}
+
+.account-dialog[open]::backdrop {
+  background-color: rgb(0 0 0 / 0.35);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+@starting-style {
+  .account-dialog[open]::backdrop {
+    background-color: rgb(0 0 0 / 0);
+    -webkit-backdrop-filter: blur(0px);
+    backdrop-filter: blur(0px);
+  }
+}
+
+.account-panel {
+  border-radius: 16px;
+  border: 1px solid var(--hairline);
+  background-color: var(--paper);
+  padding: 24px;
+  box-shadow: 0 24px 60px -20px rgb(7 71 66 / 0.28);
+}
+
+.dark .account-panel {
+  box-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.7);
+}
+
+.account-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--hairline);
+  background-color: var(--paper);
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--ink);
+  transition:
+    border-color var(--hover-fade) var(--ease-standard),
+    box-shadow var(--hover-fade) var(--ease-standard);
+}
+
+.account-input:focus {
+  outline: none;
+  border-color: var(--color-teal-400);
+  /* A ring rather than a thicker border: a border that grows moves the text. */
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-teal-400) 24%, transparent);
+}
+
+.account-input[aria-invalid='true'] {
+  border-color: var(--color-brick);
+}
+
+/*
+ * A button that closes around its own spinner.
+ *
+ * Not a label swapped for a spinner: the control draws itself in to a circle
+ * the height it already was, and the spinner is what is left in the middle. The
+ * width is the only thing that really moves — `2.75rem` is `h-11`, the button's
+ * own height, so the end of the animation is a circle by construction rather
+ * than by a number that has to be kept in step with the size.
+ *
+ * On the spring, because this is the one moment the control is meant to feel
+ * like an object: it overshoots by half a percent and settles, which is what
+ * separates a thing that closed from a thing that was resized.
+ */
+.button {
+  transition:
+    width 460ms var(--ease-spring),
+    padding 460ms var(--ease-spring),
+    transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button[data-busy] {
+  width: 2.75rem;
+  padding-inline: 0;
+  /* Full strength: it is working, not unavailable. */
+  opacity: 1;
+}
+
+.button-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition:
+    opacity 200ms var(--ease-standard),
+    scale 200ms var(--ease-standard);
+}
+
+.button[data-busy] .button-label {
+  opacity: 0;
+  scale: 0.92;
+}
+
+.button-spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  scale: 0.6;
+  pointer-events: none;
+  /* Late, so the spinner arrives once there is a circle to sit in. */
+  transition:
+    opacity 200ms var(--ease-standard) 120ms,
+    scale 320ms var(--ease-spring) 120ms;
+}
+
+.button[data-busy] .button-spinner {
+  opacity: 1;
+  scale: 1;
+}
+
+/*
+ * The ring that turns while the reset is in flight.
+ *
+ * A rotating arc rather than a pulsing dot: a spinner has to say *working*, and
+ * only something with a beginning and an end reads as progress rather than as a
+ * decoration keeping time.
+ */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgb(255 255 255 / 0.35);
+  border-top-color: #fff;
+  animation: spinner-turn 700ms linear infinite;
+}
+
+@keyframes spinner-turn {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/*
+ * A password rule, as a chip.
+ *
+ * The mark is drawn at full size and scaled to nothing rather than hidden, so
+ * arriving is a movement and the chip never changes width as it is satisfied —
+ * a list that reflows while you type is a list you stop reading.
+ */
+.rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--ink-muted);
+  transition:
+    color var(--hover-fade) var(--ease-standard),
+    border-color var(--hover-fade) var(--ease-standard),
+    background-color var(--hover-fade) var(--ease-standard);
+}
+
+.rule[data-met] {
+  border-color: transparent;
+  background-color: var(--color-teal-50);
+  color: var(--color-teal-700);
+}
+
+.dark .rule[data-met] {
+  background-color: #0b2b28;
+  color: var(--color-teal-200);
+}
+
+.rule-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border-radius: 999px;
+  border: 1.5px solid currentColor;
+  color: inherit;
+  transition: background-color var(--hover-fade) var(--ease-standard);
+}
+
+.rule-mark .material-symbol {
+  scale: 0;
+  transition: scale 320ms var(--ease-spring);
+}
+
+.rule[data-met] .rule-mark {
+  background-color: currentColor;
+  border-color: currentColor;
+}
+
+.rule[data-met] .rule-mark .material-symbol {
+  scale: 1;
+  color: var(--paper);
+}
+
+/*
+ * The morphing tail on each rule. `overflow: hidden` is what clips the two
+ * phrases as they pass, and the grid cell is what stacks them without taking
+ * the box's height away.
+ */
+.morph {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  justify-items: start;
+  overflow: hidden;
+  vertical-align: middle;
+  transition: width 340ms var(--ease-standard);
+}
+
+.morph-sizer {
+  position: absolute;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.morph-text {
+  grid-column-start: 1;
+  grid-row-start: 1;
+  white-space: nowrap;
+  transition:
+    opacity 280ms var(--ease-standard),
+    translate 280ms var(--ease-standard);
+}
+
+@starting-style {
+  .morph-text {
+    opacity: 0;
+    translate: 0 100%;
+  }
+}
+
+.morph-text[data-state='leaving'] {
+  opacity: 0;
+  translate: 0 -100%;
+}
+
+/*
+ * The header's call to action, which rolls between an errand and a greeting.
+ *
+ * Block rather than inline, unlike every other morph on the site, and that is
+ * not tidiness. Inline it hangs off the `vertical-align: middle` above, which
+ * sets the text down a pixel and a half from where the plain label sat and
+ * grows the line box by the same amount. Inside a fixed-height button — every
+ * other morph on the site — that is invisible; the pill in the bar is sized by
+ * its own label and would quietly get taller. It is the only thing in that
+ * label, so there is nothing for it to sit inline with anyway.
+ *
+ * The padding is the clip's headroom. The button's leading is 1.045, which
+ * leaves nothing below the baseline, and without this the roll would take the
+ * tail off a name like "Greg" on its way past. The matching negative margin
+ * hands the height straight back.
+ */
+.morph-cta {
+  display: grid;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+
+  .button,
+  .button-label,
+  .button-spinner,
+  .account-dialog,
+  .account-dialog::backdrop,
+  .morph,
+  .morph-text,
+  .rule,
+  .rule-mark,
+  .rule-mark .material-symbol {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-drift {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/*
+ * The mission film
+ * ---------------------------------------------------------------------------
+ *
+ * `--film` is the section's scroll position, 0 to 1, written on by
+ * `useScrollProgress`. Everything below is a reading of that one number, which
+ * is what keeps the title, the veil and the film itself moving as one thing
+ * rather than three effects that happen to share a scroll.
+ */
+
+/*
+ * The title rises rather than fades.
+ *
+ * It starts a full stage-height below its resting place, so it is genuinely
+ * off-screen and clipped by the stage — hidden by *position*, not by opacity.
+ * That distinction is the whole look: a fade announces that something is being
+ * revealed, where a rise reads as something that was always there and is only
+ * now in frame.
+ *
+ * The travel finishes at 45% of the section, not at 100%. Past that point the
+ * title simply stays, which is what makes it feel pinned to the film rather
+ * than dragged along by the scrollbar.
+ */
+.film-copy {
+  --t: clamp(0, calc(var(--film, 0) / 0.45), 1);
+
+  /*
+   * It travels from the middle of the film to the top of it.
+   *
+   * The resting place is `top: 16%`, and the whole journey is one transform
+   * away from there: at the start the block is pushed down by the 34% of the
+   * stage that separates 16% from dead centre, and up by half its own height,
+   * which is what actually centres it. Move the resting place and this fraction
+   * has to move with it, or the copy stops starting from the middle. Both terms fade out together as `--t`
+   * runs, so it arrives at 22% with no transform left.
+   *
+   * The two terms have to be in the same `translateY` and cannot be split
+   * between `top` and `transform`: `top` percentages measure the *stage* while
+   * translate percentages measure the *element*, and only the second one knows
+   * how tall a two-line title is. Animating `top` would also lay the page out
+   * again on every frame, where a transform is composited.
+   */
+  --rise: calc(0.34 * var(--film-h, 78vh) - 50%);
+
+  position: absolute;
+  inset-inline: 0;
+  /*
+   * 16% rather than flush, and the figure is load-bearing. The transport
+   * controls sit in the top right corner at a fixed 32px, so the clearance the
+   * copy gets is a *percentage* of a stage whose height changes with the
+   * viewport — a number that looks fine on a tall window can put the type
+   * through the buttons on a short one. 16% is as high as it goes while still
+   * clearing them at 620px of viewport.
+   */
+  top: 16%;
+  padding-inline: var(--card-pad, 2rem);
+  text-align: center;
+  transform: translateY(calc((1 - var(--t)) * var(--rise)));
+  will-change: transform;
+}
+
+/*
+ * The film drifts slower than the page. A quarter of the section's travel,
+ * upward — enough that the frame is not nailed to the scroll, not so much that
+ * the crop visibly slides.
+ */
+/*
+ * Letterboxed rather than full-bleed. The film is centred in a viewport-tall
+ * sticky box and only 78% of it, so there is page either side of it — a band
+ * across the screen instead of a wall filling it.
+ */
+.film-stage {
+  --film-h: 78vh;
+  height: var(--film-h);
+}
+
+.film-stage video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateY(calc(var(--film, 0) * -5vh)) scale(1.1);
+  will-change: transform;
+}
+
+.film-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: #000;
+  /* Heavy at the top of the section, and never quite gone. */
+  opacity: calc(0.1 + (1 - clamp(0, calc(var(--film, 0) / 0.7), 1)) * 0.55);
+}
+
+/*
+ * Top right, clear of the title. At the bottom they collided with the copy on
+ * a short viewport, and a control that overlaps the thing it controls is a
+ * control you avoid touching.
+ */
+.film-controls {
+  position: absolute;
+  inset-inline-end: var(--card-pad, 2rem);
+  top: var(--card-pad, 2rem);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/*
+ * A circle, the glyph, and nothing else.
+ *
+ * No filled chip, no blur, no shadow. The button's *border is the progress*,
+ * and anything else drawn there — including a soft shadow meant to help it read
+ * over a bright frame — puts a smudge under the circle and competes with the
+ * one thing the control has to say. The veil over the film is what keeps it
+ * legible, and that is already there.
+ */
+.film-button {
+  position: relative;
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #fff;
+  transition: scale var(--hover-fade) var(--ease-standard);
+}
+
+.film-button:hover {
+  scale: 1.06;
+}
+
+.film-button:active {
+  scale: 0.92;
+}
+
+.film-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  /* One unit is one pixel on this viewBox, so this matches the volume border. */
+  stroke-width: 1.5;
+}
+
+/* The part not yet played — the same hairline the volume button wears. */
+.film-ring-track {
+  stroke: rgb(255 255 255 / 0.28);
+}
+
+.film-ring-value {
+  stroke: #fff;
+  stroke-linecap: round;
+  /*
+   * No transition. `timeupdate` lands about four times a second and a tween
+   * between those readings would always be chasing a number that had already
+   * moved — the ring would lag the film it is reporting on.
+   */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * The title sits where it lands and the film holds still. The veil is a
+   * static value rather than a scroll reading, so the type stays legible.
+   */
+  .film-copy {
+    transform: none;
+  }
+
+  .film-stage video {
+    transform: scale(1.12);
+  }
+
+  .film-veil {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * View-transition pseudo-elements are their own tree on the root, not
+   * descendants of anything a `*` selector reaches, so they need saying twice.
+   */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  .menu-shell,
+  .menu-panel,
+  .menu-icon-bar,
+  .hero-pill,
+  .hero-words,
+  .hero-char,
+  .gallery-icon {
+    transition: none;
+  }
+
+  /*
+   * The row stands still and centres what fits. The duplicate copies stay in
+   * the DOM — they are `aria-hidden` and cost nothing — but with the animation
+   * stopped the track would otherwise sit hard against the left edge.
+   */
+  .marquee-track {
+    animation: none;
+    justify-content: center;
+  }
+
+  /*
+   * The gallery stops advancing on its own. `animationend` is what moves it
+   * along, so killing the animation is enough — the arrows and dots still work,
+   * it simply waits to be told.
+   */
+  .gallery-dot[data-active] .gallery-clock {
+    animation: none;
+  }
+
+  .material-symbol {
+    transition: none;
+  }
+}
+
+/*
+ * Arrivals
+ * ---------------------------------------------------------------------------
+ *
+ * `--reveal` is written on an element by `hooks/useReveal` as it comes up the
+ * page — 0 with its top near the bottom of the viewport, 1 once it is well
+ * inside — and it is written on every scroll frame, never animated in time.
+ * Everything below is a function of that number, so the motion is the
+ * scroll's: stop and it stops, go back and it goes back.
+ *
+ * Children inherit the parent's number and take their own place in it with
+ * `--i`: each one starts a little later along the same travel, which is what
+ * turns a row of cards arriving into a row of cards arriving one after
+ * another, without a second clock.
+ *
+ * The travel is short — forty pixels, three percent of scale — because it is
+ * the whole page that moves this way, and a page whose every block sails in
+ * from below is a page nobody can read. What sells it is the timing, not the
+ * distance.
+ */
+.reveal-item {
+  --r: clamp(0, calc((var(--reveal, 1) - var(--i, 0) * 0.12) / (1 - var(--i, 0) * 0.12)), 1);
+  opacity: var(--r);
+  transform: translateY(calc((1 - var(--r)) * 40px)) scale(calc(0.97 + 0.03 * var(--r)));
+  will-change: transform, opacity;
+}
+
+/*
+ * A sentence that lights up as you reach it, one word after the next.
+ *
+ * `--n` is the number of words, `--i` this word's place. Each word goes from
+ * dim to lit over a short window of the parent's travel, and the windows are
+ * staggered along it so the light runs across the sentence as it climbs. The
+ * words never move: this is a statement being read, not a thing arriving.
+ */
+.reveal-word {
+  --r: clamp(0, calc((var(--reveal, 1) * (var(--n, 1) + 2) - var(--i, 0)) / 2.5), 1);
+  opacity: calc(0.16 + 0.84 * var(--r));
+}
+
+/*
+ * The hero's first appearance
+ * ---------------------------------------------------------------------------
+ *
+ * Four blocks, in reading order, each a beat after the last: the first line,
+ * the line with the word in it, the sentence under them, the button. A long
+ * settle on the same expo curve as the page's scroll and the menu, so the
+ * headline lands the way everything else here moves. Run once, from CSS, so
+ * it is on screen before any script has a say.
+ */
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hero-in {
+  animation: hero-in 1200ms var(--ease-glide) both;
+  animation-delay: calc(80ms + var(--i, 0) * 110ms);
+}
+
+/*
+ * The film opens
+ * ---------------------------------------------------------------------------
+ *
+ * Before the section has pinned, the picture is a card: inset from the edges,
+ * with the page's corner radius. Over the first third of the pinned travel it
+ * grows to full bleed and the corners go square — the frame opening out to
+ * take the screen — while the copy is making its own journey to the top.
+ * Both read `--film`, so they are one movement.
+ *
+ * Only the picture and the veil scale. The copy and the controls stay on the
+ * stage's own grid: type scaled by fourteen percent goes soft, and the
+ * controls would float outside a card that has not yet reached the corner
+ * they sit in — so they wait, and fade in as the corner arrives under them.
+ */
+.film-media {
+  --open: clamp(0, calc(var(--film, 0) / 0.36), 1);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: calc((1 - var(--open)) * 32px);
+  transform: scale(calc(0.86 + 0.14 * var(--open)));
+  will-change: transform;
+}
+
+.film-controls {
+  opacity: clamp(0, calc((var(--film, 0) - 0.26) / 0.12), 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-item,
+  .reveal-word {
+    opacity: 1;
+    transform: none;
+  }
+
+  .hero-in {
+    animation: none;
+  }
+
+  .film-media {
+    transform: none;
+    border-radius: 0;
+  }
+
+  .film-controls {
+    opacity: 1;
+  }
+}
+
+
+.studio-in {
+  animation: studio-in 720ms var(--ease-glide) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+@keyframes studio-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.stage-enter {
+  animation: stage-enter 640ms var(--ease-glide) both;
+}
+
+.stage-enter[data-dir='back'] {
+  animation-name: stage-enter-back;
+}
+
+@keyframes stage-enter {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes stage-enter-back {
+  from {
+    opacity: 0;
+    transform: translateY(-22px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.found-in {
+  animation: found-in 820ms var(--ease-glide) both;
+  animation-delay: calc(var(--i, 0) * 140ms + 200ms);
+}
+
+@keyframes found-in {
+  from {
+    opacity: 0;
+    transform: translateY(36px) scale(0.94);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.tray {
+  --mx: 50%;
+  --my: 50%;
+  --tray-glow: 0;
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform 500ms var(--ease-glide),
+    background-color var(--hover-fade) var(--ease-standard);
+}
+
+.tray::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background:
+    radial-gradient(260px circle at var(--mx) var(--my), rgb(81 194 186 / calc(0.95 * var(--tray-glow))), transparent 70%),
+    linear-gradient(135deg, rgb(81 194 186 / 0.35), rgb(224 244 242 / 0.06) 40%, rgb(58 143 181 / 0.3));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  transition: background 220ms var(--ease-standard);
+}
+
+.tray::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(360px circle at var(--mx) var(--my), rgb(81 194 186 / calc(0.16 * var(--tray-glow))), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.tray[data-over] {
+  --tray-glow: 1;
+  transform: scale(1.015);
+}
+
+.tray-pages {
+  position: relative;
+  width: 84px;
+  height: 104px;
+}
+
+.tray-page {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.04));
+  border: 1px solid rgb(224 244 242 / 0.22);
+  box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.7);
+  transform-origin: 50% 100%;
+  transition: transform 620ms var(--ease-glide), opacity 400ms var(--ease-standard);
+}
+
+.tray-page:nth-child(1) {
+  transform: rotate(-9deg) translateX(-14px);
+  opacity: 0.55;
+}
+
+.tray-page:nth-child(2) {
+  transform: rotate(5deg) translateX(10px);
+  opacity: 0.75;
+}
+
+.tray-page:nth-child(3) {
+  transform: none;
+}
+
+.tray:hover .tray-page:nth-child(1),
+.tray[data-over] .tray-page:nth-child(1) {
+  transform: rotate(-16deg) translateX(-30px) translateY(-6px);
+}
+
+.tray:hover .tray-page:nth-child(2),
+.tray[data-over] .tray-page:nth-child(2) {
+  transform: rotate(10deg) translateX(26px) translateY(-4px);
+}
+
+.tray:hover .tray-page:nth-child(3),
+.tray[data-over] .tray-page:nth-child(3) {
+  transform: translateY(-12px);
+}
+
+.tray-page-line {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgb(224 244 242 / 0.35);
+}
+
+.chip-in {
+  animation: chip-in 460ms var(--ease-spring) both;
+}
+
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+.row-in {
+  animation: row-in 520ms var(--ease-glide) both;
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.track-line {
+  position: absolute;
+  inset-inline-start: 11px;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  background: var(--hairline);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.track-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--color-teal-400);
+  transform-origin: top;
+  transform: scaleY(var(--fill, 0));
+  transition: transform 700ms var(--ease-glide);
+}
+
+.track-dot {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink-faint);
+  background: var(--paper);
+  color: transparent;
+  transition:
+    border-color 420ms var(--ease-standard),
+    background-color 420ms var(--ease-standard),
+    color 420ms var(--ease-standard),
+    box-shadow 600ms var(--ease-standard),
+    transform 420ms var(--ease-spring);
+}
+
+.track-dot[data-state='done'] {
+  border-color: var(--color-teal-400);
+  background: var(--color-teal-400);
+  color: var(--paper);
+}
+
+.track-dot[data-state='current'] {
+  border-color: var(--color-teal-400);
+  background: var(--paper);
+  box-shadow: 0 0 0 5px rgb(81 194 186 / 0.18);
+  transform: scale(1.08);
+}
+
+.track-dot[data-state='current']::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-teal-400);
+}
+
+.track-dot[data-lit] {
+  animation: dot-lit 900ms var(--ease-standard);
+}
+
+@keyframes dot-lit {
+  0% {
+    box-shadow: 0 0 0 0 rgb(81 194 186 / 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgb(81 194 186 / 0);
+  }
+}
+
+.seg-pill {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 999px;
+  background: var(--ink);
+  transition:
+    transform 480ms var(--ease-spring),
+    width 480ms var(--ease-spring),
+    opacity 200ms var(--ease-standard);
+}
+
+.unfold {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms var(--ease-glide), opacity 300ms var(--ease-standard);
+  opacity: 0;
+}
+
+.unfold[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.unfold > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.unfold-x {
+  display: grid;
+  grid-template-columns: 0fr;
+  transition: grid-template-columns 420ms var(--ease-glide), opacity 300ms var(--ease-standard);
+  opacity: 0;
+}
+
+.unfold-x[data-open] {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+
+.unfold-x > div {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.saved-mark {
+  transition: opacity 400ms var(--ease-standard), transform 400ms var(--ease-spring);
+}
+
+.saved-mark[data-fresh] {
+  animation: saved-pop 700ms var(--ease-spring);
+}
+
+@keyframes saved-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.reading-mark {
+  animation: spin 1.1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.veil {
+  opacity: 0;
+  transition: opacity 700ms var(--ease-standard);
+}
+
+.veil[data-shown] {
+  opacity: 1;
+}
+
+.portal-line {
+  position: absolute;
+  inset-inline: 0;
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(14px);
+  transition:
+    opacity 800ms var(--ease-standard),
+    filter 800ms var(--ease-standard),
+    transform 900ms var(--ease-glide);
+}
+
+.portal-line[data-state='in'] {
+  opacity: 1;
+  filter: blur(0);
+  transform: none;
+}
+
+.portal-line[data-state='out'] {
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(-14px);
+}
+
+.portal-step {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ink-faint);
+  transition:
+    background-color 500ms var(--ease-standard),
+    box-shadow 500ms var(--ease-standard),
+    scale 500ms var(--ease-spring);
+}
+
+.portal-step[data-on] {
+  background: var(--color-teal-400);
+  box-shadow: 0 0 0 5px rgb(81 194 186 / 0.18);
+  scale: 1.3;
+}
+
+.portal-step[data-done] {
+  background: var(--color-teal-600);
+}
+
+.panel-in {
+  animation: panel-in 460ms var(--ease-glide) both;
+  transform-origin: top right;
+}
+
+.bell-panel {
+  transform-origin: top right;
+  opacity: 0;
+  scale: 0.97;
+  translate: 0 -8px;
+  pointer-events: none;
+  transition:
+    opacity 300ms var(--ease-standard),
+    scale 460ms var(--ease-glide),
+    translate 460ms var(--ease-glide);
+}
+
+.bell-panel[data-open] {
+  opacity: 1;
+  scale: 1;
+  translate: 0 0;
+  pointer-events: auto;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hold-fill {
+  transform-origin: left;
+  transform: scaleX(var(--hold, 0));
+  transition: transform 80ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-in,
+  .stage-enter,
+  .found-in,
+  .chip-in,
+  .row-in,
+  .track-dot[data-lit],
+  .saved-mark[data-fresh],
+  .reading-mark,
+  .panel-in {
+    animation: none;
+  }
+
+  .tray,
+  .tray-page,
+  .track-fill,
+  .track-dot,
+  .seg-pill,
+  .unfold,
+  .unfold-x,
+  .veil,
+  .portal-line,
+  .portal-step {
+    transition: none;
+  }
+
+  .portal-line {
+    filter: none;
+    transform: none;
+  }
+}
