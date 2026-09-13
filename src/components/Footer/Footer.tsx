@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type Rea
 import { Link, useNavigate } from 'react-router'
 import { useLenis } from 'lenis/react'
 import BrandIcon, { type BrandName } from '../BrandIcon'
-import Globe from '../Globe'
 import { prefersReducedMotion } from '../../lib/transition'
 import { openAccountModal, useAccount } from '../../lib/account'
 import { asset } from '../../lib/asset'
@@ -317,18 +316,7 @@ function Content({ ref }: { ref?: React.Ref<HTMLDivElement> }) {
           </div>
         </div>
 
-        {/*
-         * The phone's globe. There is no spare row on a narrow screen — the
-         * columns stack and the mark has already gone in beside the links —
-         * so the world gets a band of its own under them, edge to edge, with
-         * the sphere in the middle of it. `-mx-6` undoes the container's
-         * padding so the halo has the whole width to fade into.
-         */}
-        <div className="-mx-6 mt-12 h-[300px] lg:hidden">
-          <Globe align="centre" className="size-full" />
-        </div>
-
-        <div className="mt-8 flex flex-col items-center gap-2 lg:hidden">
+        <div className="mt-12 flex flex-col items-center gap-2 lg:hidden">
           <Mark className="size-20" />
           <ByLine centred small className="max-w-[10rem]" />
         </div>
@@ -344,17 +332,6 @@ function Content({ ref }: { ref?: React.Ref<HTMLDivElement> }) {
         <div className="hidden flex-1 items-center gap-5 py-10 lg:flex">
           <Mark className="size-40" />
           <ByLine />
-          {/*
-           * The globe, under the last column. `self-stretch` gives it the
-           * row's whole height to be round in; the width is what the sphere
-           * and the light around it need, and no more. `-mr-6` lets the box
-           * run out to the container's edge — the same distance as the
-           * padding it undoes, so it never leaves the container — which is
-           * room for the halo to fade rather than be cut. It takes the
-           * pointer, so it sits on the far side of the byline where a hand
-           * reaching for the link never crosses it.
-           */}
-          <Globe className="-mr-6 ml-auto w-[440px] self-stretch" />
         </div>
 
         <div className="mt-14 border-t border-hairline py-7">

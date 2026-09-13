@@ -7,9 +7,8 @@
  * override, and it is remembered per device.
  *
  * Dark is where a device that has never been told starts, whatever its OS is
- * doing. The page is designed dark first — the field behind the hero and the
- * globe in the footer are at their best on black — and a first visit should
- * see it that way. The toggle still pins light for anyone who wants it, and
+ * doing. The page is designed dark first — the field behind the hero is at its
+ * best on black — and a first visit should see it that way. The toggle still pins light for anyone who wants it, and
  * "system" is kept for anything that already stored it.
  *
  * The class goes on `<html>`, which is what the `dark:` variant in `index.css`
